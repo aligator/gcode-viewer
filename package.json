@@ -1,0 +1,20 @@
+{
+  "name": "gcode-viewer",
+  "version": "0.1.0",
+  "description": "A simple gcode viewer lib using three.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "repository": "https://registry.yarnpkg.com/gcode-viewer",
+  "author": "aligator <aligator@suncraft-server.de>",
+  "license": "MIT",
+  "scripts": {
+    "prepublish": "tsc"
+  },
+  "dependencies": {
+    "three": "^0.128.0"
+  },
+  "devDependencies": {
+    "@types/three": "^0.127.1",
+    "typescript": "^4.2.4"
+  }
+}
