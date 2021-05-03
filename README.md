@@ -5,6 +5,8 @@
 This is a basic GCode viewer lib for js / ts.  
 It is specifically built for [GoSlice](https://github.com/aligator/GoSlice) but may also work with GCode from other slicers.
 
+![gcode-viewer](gcode-viewer.png)
+
 ## Features
 
 * slicing the viewed lines either by layer or line by line
