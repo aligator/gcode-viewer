@@ -19,11 +19,15 @@ You are welcome to help.
 [Just look for open issues](https://github.com/aligator/gcode-viewer/issues) and pick one, create new issues or create new pull requests.
 
 ## Usage
-[Take a look at this example.](https://github.com/aligator/dev/blob/main/src/windows/gcodeViewer.tsx)
+### Examples
+[Take a look at this example.](example/index.html)
+[Also take a look here.](https://github.com/aligator/dev/blob/main/src/windows/gcodeViewer.tsx)
 
 ### Setup
 
 ```js
+import { GCodeRenderer, Color, SpeedColorizer } from "gcode-viewer"
+
 const renderer = new GCodeRenderer(gcodeString, 800, 600, new Color(0x808080))
 
 // This is an example using the Speed colorizer.

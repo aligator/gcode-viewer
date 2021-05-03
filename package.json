@@ -1,6 +1,6 @@
 {
   "name": "gcode-viewer",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "A simple gcode viewer lib using three.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
