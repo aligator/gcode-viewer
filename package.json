@@ -4,7 +4,7 @@
   "description": "A simple gcode viewer lib using three.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "repository": "https://registry.yarnpkg.com/gcode-viewer",
+  "repository": "https://github.com/aligator/gcode-viewer",
   "author": "aligator <aligator@suncraft-server.de>",
   "license": "MIT",
   "files": [
