@@ -1,6 +1,6 @@
 {
   "name": "gcode-viewer",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "A simple gcode viewer lib using three.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -8,16 +8,23 @@
   "author": "aligator <aligator@suncraft-server.de>",
   "license": "MIT",
   "files": [
-    "dist/**/*"
+    "dist/**/*",
+    "_bundles/**/*",
+    "dist-esm/**/*"
   ],
   "scripts": {
-    "prepublish": "tsc"
+    "clean": "rm -rf _bundles dist dist-esm",
+    "prepublish": "yarn clean && tsc && tsc -m es6 --outDir dist-esm && webpack"
   },
   "dependencies": {
     "three": "^0.128.0"
   },
   "devDependencies": {
     "@types/three": "^0.127.1",
-    "typescript": "^4.2.4"
+    "awesome-typescript-loader": "^5.2.1",
+    "typescript": "^4.2.4",
+    "uglifyjs-webpack-plugin": "^2.2.0",
+    "webpack": "^5.36.2",
+    "webpack-cli": "^4.6.0"
   }
 }

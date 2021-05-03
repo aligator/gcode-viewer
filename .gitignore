@@ -1,3 +1,5 @@
 dist
 node_modules
 *.log
+_bundles
+lib-esm
