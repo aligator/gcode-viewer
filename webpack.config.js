@@ -1,7 +1,6 @@
 
 const path = require('path');
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
-const { CheckerPlugin } = require('awesome-typescript-loader')
 
 module.exports = {
     entry: {
@@ -12,7 +11,7 @@ module.exports = {
       path: path.resolve(__dirname, '_bundles'),
       filename: '[name].js',
       libraryTarget: 'umd',
-      library: 'gcode-viewer',
+      library: 'gcodeViewer',
       umdNamedDefine: true
     },
     resolve: {
@@ -31,15 +30,10 @@ module.exports = {
         rules: [
             {
                 test: /\.tsx?$/,
-                loader: 'awesome-typescript-loader',
-                exclude: /node_modules/,
+                loader: 'ts-loader',           
             }
         ]
     },
-
-    plugins: [
-        new CheckerPlugin()
-    ]
-  }
+}
   
   

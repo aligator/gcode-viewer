@@ -1,6 +1,6 @@
 {
   "name": "gcode-viewer",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "A simple gcode viewer lib using three.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,7 +21,7 @@
   },
   "devDependencies": {
     "@types/three": "^0.127.1",
-    "awesome-typescript-loader": "^5.2.1",
+    "ts-loader": "^9.1.1",
     "typescript": "^4.2.4",
     "uglifyjs-webpack-plugin": "^2.2.0",
     "webpack": "^5.36.2",

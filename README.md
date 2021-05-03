@@ -35,7 +35,7 @@ renderer.colorizer = new SpeedColorizer(this.renderer.getMinMaxValues().minSpeed
 
 document.getElementById("gcode-viewer").append(renderer.element())
 
-this.renderer.render().then(() => console.log("rendering finished"))
+renderer.render().then(() => console.log("rendering finished"))
 ```
 
 ### Resize
