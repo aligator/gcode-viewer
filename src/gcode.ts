@@ -380,8 +380,6 @@ export class GCodeRenderer {
         // Sort the layers by starting line number.
         this.layerIndex = Array.from(layerPointsCache.values()).sort((v1, v2) => v1.start - v2.start)
 
-        this.fitCamera()
-
         // Set up some lights.
         const ambientLight = new AmbientLight(0xffffff, 0.5);
         this.scene.add(ambientLight);
@@ -389,12 +387,14 @@ export class GCodeRenderer {
         const spotLight = new SpotLight(0xffffff, 0.9);
         spotLight.position.set(200, 400, 300);
         spotLight.lookAt(new Vector3(0, 0, 0))
-        this.scene.add(spotLight);
 
         const spotLight2 = new SpotLight(0xffffff, 0.9);
         spotLight2.position.set(-200, -400, -300);
         spotLight2.lookAt(new Vector3(0, 0, 0))
+        this.scene.add(spotLight);
         this.scene.add(spotLight2);
+
+        this.fitCamera()
     }
 
     private draw() {
