@@ -7,6 +7,9 @@
   "repository": "https://registry.yarnpkg.com/gcode-viewer",
   "author": "aligator <aligator@suncraft-server.de>",
   "license": "MIT",
+  "files": [
+    "dist/**/*"
+  ],
   "scripts": {
     "prepublish": "tsc"
   },
