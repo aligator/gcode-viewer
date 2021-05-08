@@ -31,7 +31,7 @@ export class GCodeRenderer {
     private texture?: Texture
     private lineMaterial = new MeshPhongMaterial({  vertexColors: true } )
 
-    private combinedLine?: LineTubeGeometry
+    private combinedLines: LineTubeGeometry[] = []
 
     private gCode: string
 
@@ -248,6 +248,7 @@ export class GCodeRenderer {
         }
 
         // Save some values
+        let lastLastPoint: Vector3 = new Vector3(0, 0, 0)
         let lastPoint: Vector3 = new Vector3(0, 0, 0)
         let lastE = 0
         let lastF = 0
@@ -268,13 +269,44 @@ export class GCodeRenderer {
             return val
         }
 
-        // Create the geometry.
-        this.combinedLine = new LineTubeGeometry(this.radialSegments)
-
-        const lines: (string | undefined)[] = this.gCode.split("\n")
+        let lines: (string | undefined)[] = this.gCode.split("\n")
         this.gCode = "" // clear memory
+
+        // Use several objects which each hold a part of the lines.
+        // This is done to reduce memory consumption while calculating.
+        // Note it's an approximation as not each GCode line is actually rendered as line...
+        const linesPerObject = 120000
+        const objectCount = Math.ceil(lines.length / linesPerObject)
+        console.log(lines.length, objectCount) 
+        
+        let currentObject = 0
+        let lastAddedLinePoint: LinePoint | undefined = undefined
+        let pointCount = 0
+        const addLine = (newLine: LinePoint) => {
+            if (pointCount > 0 && pointCount % linesPerObject == 0) {
+                // end the old geometry and increase the counter
+                this.combinedLines[currentObject].finish()
+                this.scene.add(new Mesh(this.combinedLines[currentObject], this.lineMaterial))
+                currentObject++
+            }
+
+            if (this.combinedLines[currentObject] === undefined) {
+                console.log("New object")
+                this.combinedLines[currentObject] = new LineTubeGeometry(this.radialSegments)
+                if (lastAddedLinePoint) {
+                    this.combinedLines[currentObject].add(lastAddedLinePoint)
+                }
+            }
+
+            this.combinedLines[currentObject].add(newLine)
+            lastAddedLinePoint = newLine
+            pointCount++
+        }
+
+        // Create the geometry.
+        //this.combinedLines[oNr] = new LineTubeGeometry(this.radialSegments)
         lines.forEach((line, i)=> {
-            if (this.combinedLine === undefined || line === undefined) {
+            if (line === undefined) {
                 return
             }
 
@@ -295,7 +327,6 @@ export class GCodeRenderer {
                 const curve = new LineCurve3(lastPoint, newPoint)
                 const length = curve.getLength()
 
-                // TODO: why are there some with length 0? Is it an error in GoSlice??
                 if (length !== 0) {
                     let radius = (e - lastE) / length * 10
 
@@ -319,7 +350,7 @@ export class GCodeRenderer {
                     // As the GCode contains the extrusion for the 'current' line, 
                     // but the LinePoint contains the radius for the 'next' line
                     // we need to combine the last point with the current radius.
-                    this.combinedLine.add(new LinePoint(lastPoint.clone(), radius, color))
+                    addLine(new LinePoint(lastPoint.clone(), radius, color))
 
                     // Try to figure out the layer start and end points.
                     if (lastPoint.z !== newPoint.z) {
@@ -340,8 +371,8 @@ export class GCodeRenderer {
                             }
                         }
 
-                        last.end = this.combinedLine.pointsCount()-1
-                        current.start = this.combinedLine.pointsCount()
+                        last.end = pointCount-1
+                        current.start = pointCount
 
                         layerPointsCache.set(lastPoint.z, last)
                         layerPointsCache.set(newPoint.z, current)
@@ -349,6 +380,7 @@ export class GCodeRenderer {
                 }
 
                 // Save the data.
+                lastLastPoint.copy(lastPoint)
                 lastPoint.copy(newPoint)
                 lastE = e
                 lastF = f
@@ -356,6 +388,7 @@ export class GCodeRenderer {
             // Set a value directly.
             } else if (cmd[0] === "G92") {
                 // set state
+                lastLastPoint.copy(lastPoint)
                 lastPoint = new Vector3(
                     this.parseValue(cmd.find((v) => v[0] === "X")) || lastPoint.x,
                     this.parseValue(cmd.find((v) => v[0] === "Y")) || lastPoint.y,
@@ -373,9 +406,10 @@ export class GCodeRenderer {
             lines[i] = undefined
         })
 
-        // Calculate the mesh.
-        this.combinedLine.finish()
-        this.scene.add(new Mesh(this.combinedLine, this.lineMaterial))
+
+        // Finish last object
+        this.combinedLines[currentObject].finish()
+        this.scene.add(new Mesh(this.combinedLines[currentObject], this.lineMaterial))
 
         // Sort the layers by starting line number.
         this.layerIndex = Array.from(layerPointsCache.values()).sort((v1, v2) => v1.start - v2.start)
@@ -398,7 +432,7 @@ export class GCodeRenderer {
     }
 
     private draw() {
-        if (this.combinedLine === undefined || this.camera === undefined) {
+        if (this.combinedLines.length === 0 || this.camera === undefined) {
             return
         }
 
@@ -415,7 +449,7 @@ export class GCodeRenderer {
      * @param {number} end the ending segment (excluding)
      */
     public slice(start?: number, end?: number) {
-        this.combinedLine?.slice(start, end)
+        //this.combinedLines.slice(start, end)
         this.draw()
     }
 
@@ -429,7 +463,7 @@ export class GCodeRenderer {
      * @param {number} end the ending layer (excluding)
      */
     public sliceLayer(start?: number, end?: number) {
-        this.combinedLine?.slice(start && this.layerIndex[start]?.start, end && this.layerIndex[end]?.end)
+       // this.combinedLine?.slice(start && this.layerIndex[start]?.start, end && this.layerIndex[end]?.end)
         this.draw()
     }
 
@@ -448,7 +482,7 @@ export class GCodeRenderer {
      */
     public dispose() {
         this.cameraControl?.dispose()
-        this.combinedLine?.dispose()
+        this.combinedLines.forEach(e => e.dispose());
         this.texture?.dispose()
     }
 
@@ -458,7 +492,7 @@ export class GCodeRenderer {
      * @returns {number}
      */
     public pointsCount(): number {
-        return this.combinedLine?.pointsCount() || 0
+        return  this.combinedLines.reduce((count, l) => count+l.pointsCount(), 0)
     }
 
     /**

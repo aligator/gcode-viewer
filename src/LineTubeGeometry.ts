@@ -78,6 +78,13 @@ export class LineTubeGeometry extends BufferGeometry {
 
         // not needed anymore
         this.segmentsRadialNumbers = []
+
+        // these are now in the attribute buffers - can be deleted
+        this.normals = []
+        this.colors = []
+        this.uvs = []
+
+        // The vertices are needed to slice. For now they need to be kept.
     }
 
     public pointsCount(): number {
