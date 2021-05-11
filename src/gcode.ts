@@ -490,7 +490,7 @@ export class GCodeRenderer {
      * @param {number} end the ending layer (excluding)
      */
     public sliceLayer(start?: number, end?: number) {
-        
+        this.slice(start && this.layerIndex[start]?.start, end && this.layerIndex[end]?.end)
     }
 
     /**
