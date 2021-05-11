@@ -98,11 +98,16 @@ export class LineTubeGeometry extends BufferGeometry {
      * @param end the ending segment (excluding)
      */
     public slice(start: number = 0, end: number = this.pointsLength) {
+        if (start === end) {
+            this.setIndex([]);
+            return
+        }
+
         // TODO: support negative values like the slice from Array?
         if (start < 0 || end < 0) {
             throw new Error("negative values are not supported, yet")
         }
-
+        
         const seg = (this.radialSegments + 1) * 6
 
         let startI = start * seg * 2

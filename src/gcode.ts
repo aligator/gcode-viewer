@@ -18,7 +18,7 @@ import { LinePoint } from "./LinePoint";
 import { SegmentColorizer, SimpleColorizer } from './SegmentColorizer';
 
 /**
- * GCode rendere which parses a GCode file and displays it using 
+ * GCode renderer which parses a GCode file and displays it using 
  * three.js. Use .element() to retrieve the DOM canvas element.
  */
 export class GCodeRenderer {
@@ -71,6 +71,17 @@ export class GCodeRenderer {
      * @type number
      */
     public radialSegments: number = 8
+
+    /**
+     * Internally the rendered object is split into several. This allows to reduce the
+     * memory consumption while rendering.
+     * You can set the number of points per object.
+     * In most cases you can leave this at the default.
+     * 
+     * @default 120000
+     * @type number
+     */
+    public pointsPerObject: number = 120000
 
     /**
      * Creates a new GCode renderer for the given gcode.
@@ -271,19 +282,12 @@ export class GCodeRenderer {
 
         let lines: (string | undefined)[] = this.gCode.split("\n")
         this.gCode = "" // clear memory
-
-        // Use several objects which each hold a part of the lines.
-        // This is done to reduce memory consumption while calculating.
-        // Note it's an approximation as not each GCode line is actually rendered as line...
-        const linesPerObject = 120000
-        const objectCount = Math.ceil(lines.length / linesPerObject)
-        console.log(lines.length, objectCount) 
-        
+       
         let currentObject = 0
         let lastAddedLinePoint: LinePoint | undefined = undefined
         let pointCount = 0
         const addLine = (newLine: LinePoint) => {
-            if (pointCount > 0 && pointCount % linesPerObject == 0) {
+            if (pointCount > 0 && pointCount % this.pointsPerObject == 0) {
                 // end the old geometry and increase the counter
                 this.combinedLines[currentObject].finish()
                 this.scene.add(new Mesh(this.combinedLines[currentObject], this.lineMaterial))
@@ -449,7 +453,30 @@ export class GCodeRenderer {
      * @param {number} end the ending segment (excluding)
      */
     public slice(start?: number, end?: number) {
-        //this.combinedLines.slice(start, end)
+        const startSeg = start || 0
+        const endSeg = end || this.pointsCount()
+        
+        const objectStart = Math.floor(startSeg / this.pointsPerObject)-1
+        const objectEnd = Math.ceil(endSeg / this.pointsPerObject)-1
+        
+        this.combinedLines.forEach((line, i) => {
+            let from = 0
+            let to = line.pointsCount()
+
+            if (i == objectStart) {
+                from = startSeg - i * this.pointsPerObject
+            } else if (i > objectStart && i < objectEnd) {
+                // do nothing
+            } else if (i == objectEnd) {
+                to = endSeg - i * this.pointsPerObject
+            } else {
+                from = 0
+                to = 0
+            }
+
+            line.slice(from, to)
+        })
+
         this.draw()
     }
 
@@ -463,8 +490,7 @@ export class GCodeRenderer {
      * @param {number} end the ending layer (excluding)
      */
     public sliceLayer(start?: number, end?: number) {
-       // this.combinedLine?.slice(start && this.layerIndex[start]?.start, end && this.layerIndex[end]?.end)
-        this.draw()
+        
     }
 
     /**
