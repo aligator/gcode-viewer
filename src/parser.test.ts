@@ -46,8 +46,7 @@ G1 X117.08 Y84.39 E0.1148
             sliceEnd?: number
             expectedCount?: number[]
             expectedError?: string
-        }>([
-            {
+        }>([{
             name: "no start / end",
             gcode: gCode14Points,
             pointsPerObject: 4,
@@ -80,8 +79,7 @@ G1 X117.08 Y84.39 E0.1148
                 countExpected(radialSegments, 2, true, true), // line from point 12- 13- 14
             ],
             sliceStart: 3
-        },
-        {
+        },{
             name: "partial second object",
             gcode: gCode14Points,
             pointsPerObject: 4,
@@ -92,7 +90,93 @@ G1 X117.08 Y84.39 E0.1148
                 countExpected(radialSegments, 2, true, true), // line from point 12- 13- 14
             ],
             sliceStart: 4
-        }])("with values", (t) => {
+        },{
+            name: "partial last object",
+            gcode: gCode14Points,
+            pointsPerObject: 4,
+            expectedCount: [
+                countExpected(radialSegments, 3, true, true), // line from point 1 - 2 - 3 - 4
+                countExpected(radialSegments, 4, true, true), // line from point 4 - 5 - 6 - 7 - 8
+                countExpected(radialSegments, 4, true, true), // line from point 8 - 9 - 10- 11- 12
+                countExpected(radialSegments, 1, true, false), // line from point 12- 13
+            ],
+            sliceEnd: 13
+        },{
+            name: "no last object",
+            gcode: gCode14Points,
+            pointsPerObject: 4,
+            expectedCount: [
+                countExpected(radialSegments, 3, true, true), // line from point 1 - 2 - 3 - 4
+                countExpected(radialSegments, 4, true, true), // line from point 4 - 5 - 6 - 7 - 8
+                countExpected(radialSegments, 4, true, true), // line from point 8 - 9 - 10- 11- 12
+                countExpected(radialSegments, 0, true, false), // line from point 
+            ],
+            sliceEnd: 12
+        },{
+            name: "partial second last object",
+            gcode: gCode14Points,
+            pointsPerObject: 4,
+            expectedCount: [
+                countExpected(radialSegments, 3, true, true), // line from point 1 - 2 - 3 - 4
+                countExpected(radialSegments, 4, true, true), // line from point 4 - 5 - 6 - 7 - 8
+                countExpected(radialSegments, 3, true, false), // line from point 8 - 9 - 10- 11
+                countExpected(radialSegments, 0, true, false), // line from point 
+            ],
+            sliceEnd: 11
+        },{
+            name: "partial start and end objects",
+            gcode: gCode14Points,
+            pointsPerObject: 4,
+            expectedCount: [
+                countExpected(radialSegments, 0, false, true), // line from point 
+                countExpected(radialSegments, 2, false, true), // line from point 6 - 7 - 8
+                countExpected(radialSegments, 2, true, false), // line from point 8 - 9 - 10
+                countExpected(radialSegments, 0, true, false), // line from point 
+            ],
+            sliceStart: 5,
+            sliceEnd: 10
+        },{
+            name: "two segments over gap",
+            gcode: gCode14Points,
+            pointsPerObject: 4,
+            expectedCount: [
+                countExpected(radialSegments, 0, false, true), // line from point 
+                countExpected(radialSegments, 1, false, true), // line from point 7 - 8
+                countExpected(radialSegments, 1, true, false), // line from point 8 - 9
+                countExpected(radialSegments, 0, true, false), // line from point 
+            ],
+            sliceStart: 6,
+            sliceEnd: 9
+        },{
+            name: "smaller end than start",
+            gcode: gCode14Points,
+            pointsPerObject: 4,
+            expectedCount: [
+                0, 0, 0, 0
+            ],
+            sliceStart: 9,
+            sliceEnd: 6
+        },{
+            name: "negative start",
+            gcode: gCode14Points,
+            pointsPerObject: 4,
+            expectedError: "negative values are not supported, yet",
+            sliceStart: -1
+        },{
+            name: "negative end",
+            gcode: gCode14Points,
+            pointsPerObject: 4,
+            expectedError: "negative values are not supported, yet",
+            sliceEnd: -1
+        }
+        // TODO: fix
+        // ,{
+        //     name: "only one line",
+        //     gcode: "G1 Z5 F5000\nG0 X111.78 Y83.52 Z0.20 F9000",
+        //     expectedCount: [countExpected(radialSegments, 1, true, true)],
+        //     pointsPerObject: 4,
+        // }
+    ])("with values", (t) => {
             test(t.name, async () => {
                 const lt = new GCodeParser(t.gcode)
                 lt.radialSegments = radialSegments

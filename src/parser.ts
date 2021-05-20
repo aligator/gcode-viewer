@@ -348,7 +348,9 @@ export class GCodeParser {
         })
 
         // Finish last object
-        this.combinedLines[currentObject].finish()
+        if (this.combinedLines[currentObject]) {
+            this.combinedLines[currentObject].finish()
+        }
        
         // Sort the layers by starting line number.
         this.layerIndex = Array.from(layerPointsCache.values()).sort((v1, v2) => v1.start - v2.start)
@@ -364,6 +366,11 @@ export class GCodeParser {
      * @param {number} end the ending segment (excluding)
      */
     public slice(start: number = 0, end: number = this.pointsCount()) {
+        // TODO: support negative values like the slice from Array?
+        if (start < 0 || end < 0) {
+            throw new Error("negative values are not supported, yet")
+        }
+
         const objectStart = Math.floor(start / this.pointsPerObject)
         const objectEnd = Math.ceil(end / this.pointsPerObject)-1
 
@@ -379,16 +386,18 @@ export class GCodeParser {
 
             if (i == objectStart) {
                 from = start - i * this.pointsPerObject
-                // If it is not the first point, remove the first point from the calculation 
-                // as it's also the last point from the previous object. 
-                // This logic applies only for objects > 0.
-                if (objectStart > 0 && start % this.pointsPerObject === 0) {
+                // If it is not the first point, remove the first point from the calculation.
+                if (objectStart > 0) {
                     from++
                 }
             } 
             
             if (i == objectEnd) {
                 to = end - i * this.pointsPerObject
+                // Only if it is not the last point, add the last point to the calculation.
+                if (objectEnd < this.pointsCount()) {
+                    to++
+                }
             }
             
             if (i < objectStart || i > objectEnd) {
@@ -427,7 +436,15 @@ export class GCodeParser {
      * @returns {number}
      */
     public pointsCount(): number {
-        return  this.combinedLines.reduce((count, line) => count+line.pointsCount(), 0)
+        return this.combinedLines.reduce((count, line, i) => {
+            // Do not count the first point of all objects after the first one.
+            // This point is always the same as the last from the previous object.
+            // The very first point is still counted -> i > 0.
+            if (i > 0) {
+                return count+line.pointsCount()-1
+            }
+            return count+line.pointsCount()
+        }, 0)
     }
 
     /**

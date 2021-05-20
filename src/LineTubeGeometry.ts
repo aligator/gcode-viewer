@@ -141,10 +141,15 @@ export class LineTubeGeometry extends BufferGeometry {
     private generateSegment(i: number) {
         let prevPoint = this.pointsBuffer[i-1]
         
-        // point 1 and 2 should always exist
+        // point and nextPoint should always exist... 
         let point = this.pointsBuffer[i]
         let nextPoint = this.pointsBuffer[i+1]
         let nextNextPoint = this.pointsBuffer[i+2]
+
+        // ...except only one line exists in total
+        if (nextPoint === undefined) {
+            return
+        }
 
         const frame = this.computeFrenetFrames([point.point, nextPoint.point], false)
 
