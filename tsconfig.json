@@ -2,6 +2,7 @@
   "compilerOptions": {
     "target": "es6",
     "module": "commonjs",
+    "moduleResolution": "node",
     "lib": ["es2017", "es7", "es6", "dom"],
     "declaration": true,
     "outDir": "dist",
@@ -12,6 +13,7 @@
     "node_modules",
     "dist",
     "dist-esm",
-    "_bundles"
+    "_bundles",
+    "./src/**/*.test.ts"
   ]
 }

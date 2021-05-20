@@ -50,6 +50,17 @@ export class LineTubeGeometry extends BufferGeometry {
         this.radialSegments = radialSegments
     }
 
+    dispose() {
+        super.dispose()
+        this.pointsBuffer = []
+        this.normals = []
+        this.vertices = []
+        this.colors = []
+        this.uvs = []
+        this.indices = []
+        this.segmentsRadialNumbers = []
+    }
+
     public add(point: LinePoint) {
         this.pointsLength++
         this.pointsBuffer.push(point)
@@ -114,10 +125,12 @@ export class LineTubeGeometry extends BufferGeometry {
         let endI = (end-1) * seg * 2
 
         if (end === this.pointsLength) {
+            // add the ending
             endI += this.radialSegments * 6
         }
 
         if (start > 0) {
+            // remove the starting
             startI += this.radialSegments * 6
         }
         
