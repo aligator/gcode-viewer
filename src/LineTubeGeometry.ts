@@ -73,8 +73,15 @@ export class LineTubeGeometry extends BufferGeometry {
     }
 
     public finish() {
-        // generate the last segment
-        this.generateSegment(1);
+        // If the there are only two points in total it has to 
+        // be handled separately as the add mehtod only starts 
+        // segment generation at min 3 points.
+        if (this.pointsBuffer.length == 2) {
+            this.generateSegment(0);
+        } else {
+            // In all other cases generate the last segment.
+            this.generateSegment(1);
+        }
 
         this.setAttribute('position', new Float32BufferAttribute(this.vertices, 3));
         this.setAttribute('normal', new Float32BufferAttribute(this.normals, 3));

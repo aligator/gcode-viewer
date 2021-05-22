@@ -148,6 +148,42 @@ G1 X117.08 Y84.39 E0.1148
             sliceStart: 6,
             sliceEnd: 9
         },{
+            name: "one segment",
+            gcode: gCode14Points,
+            pointsPerObject: 4,
+            expectedCount: [
+                countExpected(radialSegments, 0, false, true), // line from point 
+                countExpected(radialSegments, 1, false, false), // line from point 6 - 7
+                countExpected(radialSegments, 0, true, false), // line from point
+                countExpected(radialSegments, 0, true, false), // line from point 
+            ],
+            sliceStart: 5,
+            sliceEnd: 7
+        },{
+            name: "one segment at end of one object",
+            gcode: gCode14Points,
+            pointsPerObject: 4,
+            expectedCount: [
+                countExpected(radialSegments, 0, false, true), // line from point 
+                countExpected(radialSegments, 1, false, true), // line from point 7 - 8
+                countExpected(radialSegments, 0, true, false), // line from point
+                countExpected(radialSegments, 0, true, false), // line from point 
+            ],
+            sliceStart: 6,
+            sliceEnd: 8
+        },{
+            name: "one segment at start of one object",
+            gcode: gCode14Points,
+            pointsPerObject: 4,
+            expectedCount: [
+                countExpected(radialSegments, 0, false, true), // line from point 
+                countExpected(radialSegments, 0, false, true), // line from point
+                countExpected(radialSegments, 1, true, false), // line from point 8 - 9
+                countExpected(radialSegments, 0, true, false), // line from point 
+            ],
+            sliceStart: 7,
+            sliceEnd: 9
+        },{
             name: "smaller end than start",
             gcode: gCode14Points,
             pointsPerObject: 4,
@@ -168,14 +204,12 @@ G1 X117.08 Y84.39 E0.1148
             pointsPerObject: 4,
             expectedError: "negative values are not supported, yet",
             sliceEnd: -1
+        },{
+            name: "only one line",
+            gcode: "G1 Z5 F5000\nG0 X111.78 Y83.52 Z0.20 F9000",
+            expectedCount: [countExpected(radialSegments, 1, true, true)],
+            pointsPerObject: 4,
         }
-        // TODO: fix
-        // ,{
-        //     name: "only one line",
-        //     gcode: "G1 Z5 F5000\nG0 X111.78 Y83.52 Z0.20 F9000",
-        //     expectedCount: [countExpected(radialSegments, 1, true, true)],
-        //     pointsPerObject: 4,
-        // }
     ])("with values", (t) => {
             test(t.name, async () => {
                 const lt = new GCodeParser(t.gcode)
@@ -184,7 +218,7 @@ G1 X117.08 Y84.39 E0.1148
                 await lt.parse()
 
                 const errorTest = () => {
-                    lt.slice(t.sliceStart, t.sliceEnd)
+                   lt.slice(t.sliceStart, t.sliceEnd)
                 }
                 
                 if (t.expectedError) {

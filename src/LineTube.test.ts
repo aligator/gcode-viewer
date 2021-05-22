@@ -118,6 +118,15 @@ describe("LineTube", () => {
             expectedCount: countExpected(radialSegments, 4, true, true),
             sliceStart: 0,
             sliceEnd: 5
+        },{
+            name: "only one line",
+            points: [
+                new LinePoint(new Vector3(0, 0, 0), 1),
+                new LinePoint(new Vector3(1, 0, 0), 1),
+            ],
+            expectedCount: countExpected(radialSegments, 1, true, true),
+            sliceStart: 0,
+            sliceEnd: 2
         }])("with values", (t) => {
             test(t.name, () => {
                 const lt = new LineTubeGeometry(5)

@@ -386,7 +386,7 @@ export class GCodeParser {
 
             if (i == objectStart) {
                 from = start - i * this.pointsPerObject
-                // If it is not the first point, remove the first point from the calculation.
+                // If it is not the first object, remove the first point from the calculation.
                 if (objectStart > 0) {
                     from++
                 }
@@ -394,8 +394,8 @@ export class GCodeParser {
             
             if (i == objectEnd) {
                 to = end - i * this.pointsPerObject
-                // Only if it is not the last point, add the last point to the calculation.
-                if (objectEnd < this.pointsCount()) {
+                // Only if it is not the last object, add the last point to the calculation.
+                if (objectEnd <= Math.floor(this.pointsCount() / this.pointsPerObject)) {
                     to++
                 }
             }

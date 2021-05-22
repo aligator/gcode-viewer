@@ -16,7 +16,7 @@
     "clean": "rm -rf _bundles dist dist-esm",
     "build": "yarn clean && tsc && tsc -m es6 --outDir dist-esm && webpack",
     "prepublish": "yarn build && yarn test",
-    "test": "jest --verbose"
+    "test": "jest"
   },
   "dependencies": {
     "three": "^0.128.0"
