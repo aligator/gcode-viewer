@@ -369,7 +369,6 @@ export class GCodeParser {
      * @param {number} end the ending segment (excluding)
      */
     public slice(start: number = 0, end: number = this.pointsCount()) {
-        console.log(start, end)
         // TODO: support negative values like the slice from Array?
         if (start < 0 || end < 0) {
             throw new Error("negative values are not supported, yet")
