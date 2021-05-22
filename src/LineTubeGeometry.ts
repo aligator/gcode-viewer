@@ -50,6 +50,17 @@ export class LineTubeGeometry extends BufferGeometry {
         this.radialSegments = radialSegments
     }
 
+    dispose() {
+        super.dispose()
+        this.pointsBuffer = []
+        this.normals = []
+        this.vertices = []
+        this.colors = []
+        this.uvs = []
+        this.indices = []
+        this.segmentsRadialNumbers = []
+    }
+
     public add(point: LinePoint) {
         this.pointsLength++
         this.pointsBuffer.push(point)
@@ -62,8 +73,15 @@ export class LineTubeGeometry extends BufferGeometry {
     }
 
     public finish() {
-        // generate the last segment
-        this.generateSegment(1);
+        // If the there are only two points in total it has to 
+        // be handled separately as the add mehtod only starts 
+        // segment generation at min 3 points.
+        if (this.pointsBuffer.length == 2) {
+            this.generateSegment(0);
+        } else {
+            // In all other cases generate the last segment.
+            this.generateSegment(1);
+        }
 
         this.setAttribute('position', new Float32BufferAttribute(this.vertices, 3));
         this.setAttribute('normal', new Float32BufferAttribute(this.normals, 3));
@@ -78,6 +96,13 @@ export class LineTubeGeometry extends BufferGeometry {
 
         // not needed anymore
         this.segmentsRadialNumbers = []
+
+        // these are now in the attribute buffers - can be deleted
+        this.normals = []
+        this.colors = []
+        this.uvs = []
+
+        // The vertices are needed to slice. For now they need to be kept.
     }
 
     public pointsCount(): number {
@@ -91,21 +116,28 @@ export class LineTubeGeometry extends BufferGeometry {
      * @param end the ending segment (excluding)
      */
     public slice(start: number = 0, end: number = this.pointsLength) {
+        if (start === end) {
+            this.setIndex([]);
+            return
+        }
+
         // TODO: support negative values like the slice from Array?
         if (start < 0 || end < 0) {
             throw new Error("negative values are not supported, yet")
         }
-
+        
         const seg = (this.radialSegments + 1) * 6
 
         let startI = start * seg * 2
         let endI = (end-1) * seg * 2
 
         if (end === this.pointsLength) {
+            // add the ending
             endI += this.radialSegments * 6
         }
 
         if (start > 0) {
+            // remove the starting
             startI += this.radialSegments * 6
         }
         
@@ -116,10 +148,15 @@ export class LineTubeGeometry extends BufferGeometry {
     private generateSegment(i: number) {
         let prevPoint = this.pointsBuffer[i-1]
         
-        // point 1 and 2 should always exist
+        // point and nextPoint should always exist... 
         let point = this.pointsBuffer[i]
         let nextPoint = this.pointsBuffer[i+1]
         let nextNextPoint = this.pointsBuffer[i+2]
+
+        // ...except only one line exists in total
+        if (nextPoint === undefined) {
+            return
+        }
 
         const frame = this.computeFrenetFrames([point.point, nextPoint.point], false)
 
