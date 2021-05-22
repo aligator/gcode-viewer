@@ -352,8 +352,11 @@ export class GCodeParser {
             this.combinedLines[currentObject].finish()
         }
        
+
         // Sort the layers by starting line number.
         this.layerIndex = Array.from(layerPointsCache.values()).sort((v1, v2) => v1.start - v2.start)
+        // Set the end of the last layer correctly.
+        this.layerIndex[this.layerIndex.length-1].end = this.pointsCount()-1
     }
 
     /**
@@ -366,6 +369,7 @@ export class GCodeParser {
      * @param {number} end the ending segment (excluding)
      */
     public slice(start: number = 0, end: number = this.pointsCount()) {
+        console.log(start, end)
         // TODO: support negative values like the slice from Array?
         if (start < 0 || end < 0) {
             throw new Error("negative values are not supported, yet")
@@ -419,7 +423,7 @@ export class GCodeParser {
      * @param {number} end the ending layer (excluding)
      */
     public sliceLayer(start?: number, end?: number) {
-        this.slice(start && this.layerIndex[start]?.start, end && this.layerIndex[end]?.end)
+        this.slice(start && this.layerIndex[start]?.start, end && this.layerIndex[end]?.end+1)
     }
 
     /**
@@ -455,7 +459,8 @@ export class GCodeParser {
      * @returns {number}
      */
     public layerCount(): number {
-        return this.layerIndex.length || 0
+        // the last layer contains only the start-point, not an end point. -> -1
+        return this.layerIndex.length - 1 || 0
     }
 
     /**
