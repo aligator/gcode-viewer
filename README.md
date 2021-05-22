@@ -4,13 +4,15 @@
 
 This is a basic GCode viewer lib for js / ts.  
 It is specifically built for [GoSlice](https://github.com/aligator/GoSlice) but may also work with GCode from other slicers.
+In contrast to other GCode viewers this one renders the lines using a mesh instead of lines. This is done because 
+several browser-OS combination do not support line thickness rendering other than '1'.
 
 ![gcode-viewer](gcode-viewer.png)
 
 ## Features
 
 * slicing the viewed lines either by layer or line by line
-* line thickness basesed on the extrusion amount
+* line thickness based on the extrusion amount
 * colorize the lines based on line-metadata such as temperature or speed
 * changeable amount of radial segments per line - less (e.g. 3) is faster and needs less RAM, more (e.g. 8 -> the default) may look better.
 * uses orbit controls from three js
