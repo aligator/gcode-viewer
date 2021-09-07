@@ -24,8 +24,8 @@ You are welcome to help.
 
 ## Usage
 ### Examples
-[Take a look at this example.](example/index.html)
-[Also take a look here.](https://github.com/aligator/dev/blob/main/src/windows/gcodeViewer.tsx)
+[Take a look at this example.](example/index.html)  
+[Also take a look here.](https://github.com/aligator/dev/blob/main/src/windows/gCodeViewer.tsx)
 
 ### Setup
 
