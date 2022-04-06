@@ -68,6 +68,26 @@ The default is `8`.
 ### Travel lines
 You can change the line width of travel lines:
 ```js
-renderer. travelWidth = 0.1
+renderer.travelWidth = 0.1
 ```
 The default is `0.01`. `0` is also possible to completely hide them.
+
+### Skip / Filter lines
+You can skip lines when parsing the gcode based on the gcode-line:
+```
+renderer.onAddLine = (newLine, lineNumber) => {
+    if (lineNumber > 100 && lineNumber < 30000) {
+        newLine.radius = 0
+        return [newLine]
+    }
+
+    return [newLine]
+}
+```
+
+The return type is an array to be able to also inject additional lines if needed. 
+Also, as you can see in this example, you can alter the properties of the newLine.
+In this case to just hide it, you can set the radius to 0.
+
+You can use that for example to filter for specific line-types by parsing the line types out of 
+the gcode in advance and then look them up in the onAddLine callback.

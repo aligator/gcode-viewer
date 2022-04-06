@@ -6,6 +6,8 @@ import { LineTubeGeometry } from "./LineTubeGeometry";
 import { LinePoint } from "./LinePoint";
 import { SegmentColorizer, SimpleColorizer } from './SegmentColorizer';
 
+export type OnAddLineCallback = (newLine: LinePoint, lineNumber: number) => LinePoint[]
+
 /**
  * GCode renderer which parses a GCode file and displays it using 
  * three.js. Use .element() to retrieve the DOM canvas element.
@@ -62,6 +64,14 @@ export class GCodeParser {
      * @type number
      */
     public pointsPerObject: number = 120000
+
+    /**
+     * A callback which allows you to filter, modify or replace lines based on the current gcode line number.
+     * You have to return an array of lines. They will be used to completely replace the input line.
+     * 
+     * @type (newLine: LinePoint, lineNumber: number) => LinePoint[]
+     */
+    public onAddLine?: OnAddLineCallback
 
     /**
      * Creates a new GCode renderer for the given gcode.
@@ -225,28 +235,37 @@ export class GCodeParser {
         let currentObject = 0
         let lastAddedLinePoint: LinePoint | undefined = undefined
         let pointCount = 0
-        const addLine = (newLine: LinePoint) => {
-            if (pointCount > 0 && pointCount % this.pointsPerObject == 0) {
-                // end the old geometry and increase the counter
-                this.combinedLines[currentObject].finish()
-                currentObject++
+        const addLine = (newLine: LinePoint, lineNumber: number) => {
+            let lines: LinePoint[]
+            if (this.onAddLine) {
+                lines = this.onAddLine(newLine, lineNumber)
+            } else {
+                lines = [newLine]
             }
 
-            if (this.combinedLines[currentObject] === undefined) {
-                this.combinedLines[currentObject] = new LineTubeGeometry(this.radialSegments)
-                if (lastAddedLinePoint) {
-                    this.combinedLines[currentObject].add(lastAddedLinePoint)
+            lines.forEach(line => {
+                if (pointCount > 0 && pointCount % this.pointsPerObject == 0) {
+                    // end the old geometry and increase the counter
+                    this.combinedLines[currentObject].finish()
+                    currentObject++
                 }
-            }
-
-            this.combinedLines[currentObject].add(newLine)
-            lastAddedLinePoint = newLine
-            pointCount++
+    
+                if (this.combinedLines[currentObject] === undefined) {
+                    this.combinedLines[currentObject] = new LineTubeGeometry(this.radialSegments)
+                    if (lastAddedLinePoint) {
+                        this.combinedLines[currentObject].add(lastAddedLinePoint)
+                    }
+                }
+    
+                this.combinedLines[currentObject].add(line)
+                lastAddedLinePoint = line
+                pointCount++
+            });
         }
 
         // Create the geometry.
         //this.combinedLines[oNr] = new LineTubeGeometry(this.radialSegments)
-        lines.forEach((line, i)=> {
+        lines.forEach((line, lineNumber)=> {
             if (line === undefined) {
                 return
             }
@@ -291,7 +310,7 @@ export class GCodeParser {
                     // As the GCode contains the extrusion for the 'current' line, 
                     // but the LinePoint contains the radius for the 'next' line
                     // we need to combine the last point with the current radius.
-                    addLine(new LinePoint(lastPoint.clone(), radius, color))
+                    addLine(new LinePoint(lastPoint.clone(), radius, color), lineNumber)
 
                     // Try to figure out the layer start and end points.
                     if (lastPoint.z !== newPoint.z) {
@@ -344,7 +363,7 @@ export class GCodeParser {
                 hotendTemp = this.parseValue(cmd.find((v) => v[0] === "S")) || 0
             }
 
-            lines[i] = undefined
+            lines[lineNumber] = undefined
         })
 
         // Finish last object
