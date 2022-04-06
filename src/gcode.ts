@@ -13,7 +13,7 @@ import {
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { GCodeParser } from './parser'
 import { SegmentColorizer } from './SegmentColorizer'
-
+import ParserWorker from "worker-loader!./parser.worker";
 /**
  * GCode renderer which parses a GCode file and displays it using 
  * three.js. Use .element() to retrieve the DOM canvas element.
@@ -31,6 +31,13 @@ export class GCodeRenderer {
 
     // Public configurations: 
     
+    /**
+     * Disables the use of webworkers for gcode parsing.
+     * 
+     * @type boolean
+     */
+    public noWebworker: boolean = false
+
     /**
      * Width of travel-lines. Use 0 to hide them. 
      * 
@@ -188,11 +195,20 @@ export class GCodeRenderer {
      * Reads the GCode and renders it to a mesh.
      */
     public async render() {
-        this.parser.parse()
-        
-        this.parser.getGeometries().forEach(g => {
-            this.scene.add(new Mesh(g, this.lineMaterial))
-        });
+        const worker = new ParserWorker()
+
+        worker.postMessage({ a: 1 })
+        worker.onmessage = (event) => {
+            console.log("onmessage", event)
+        }
+        worker.addEventListener('message', (event) => {
+            console.log("addEventListener message", event)
+            // this.parser.getGeometries().forEach(g => {
+            //     this.scene.add(new Mesh(g, this.lineMaterial))
+            // });
+        })
+
+       
 
         // Set up some lights.
         const ambientLight = new AmbientLight(0xffffff, 0.5);
