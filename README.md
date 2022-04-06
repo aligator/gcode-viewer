@@ -85,5 +85,9 @@ renderer.onAddLine = (newLine, lineNumber) => {
 }
 ```
 
+The return type is an array to be able to also inject additional lines if needed. 
+Also, as you can see in this example, you can alter the properties of the newLine.
+In this case to just hide it, you can set the radius to 0.
+
 You can use that for example to filter for specific line-types by parsing the line types out of 
 the gcode in advance and then look them up in the onAddLine callback.
