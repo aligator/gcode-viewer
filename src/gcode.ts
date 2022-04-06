@@ -11,7 +11,7 @@ import {
     MeshPhongMaterial,
 } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { GCodeParser } from './parser'
+import { GCodeParser, OnAddLineCallback } from './parser'
 import { SegmentColorizer } from './SegmentColorizer'
 
 /**
@@ -31,6 +31,14 @@ export class GCodeRenderer {
 
     // Public configurations: 
     
+    /**
+     * A callback which allows you to filter, modify or replace lines based on the current gcode line number.
+     * You have to return an array of lines. They will be used to completely replace the input line.
+     * 
+     * @type (newLine: LinePoint, lineNumber: number) => LinePoint[]
+     */
+     public onAddLine?: OnAddLineCallback
+
     /**
      * Width of travel-lines. Use 0 to hide them. 
      * 
@@ -188,6 +196,7 @@ export class GCodeRenderer {
      * Reads the GCode and renders it to a mesh.
      */
     public async render() {
+        this.parser.onAddLine = this.onAddLine
         this.parser.parse()
         
         this.parser.getGeometries().forEach(g => {
