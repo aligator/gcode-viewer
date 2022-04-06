@@ -8,6 +8,8 @@ export interface SegmentMetadata {
     temp: number
     speed: number
 
+    gCodeLine: number
+
     // TODO: Linetype based on comments in gcode
 }
 
