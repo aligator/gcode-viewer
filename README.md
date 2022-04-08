@@ -71,3 +71,28 @@ You can change the line width of travel lines:
 renderer. travelWidth = 0.1
 ```
 The default is `0.01`. `0` is also possible to completely hide them.
+
+### Access three.js
+Both, the scene and the whole three.js is exported, so you can use it.  
+For example you can customize the scene setup:
+
+```js
+renderer.setupScene = () => {
+    // Set up some lights. (use different lights in this example)
+    const ambientLight = new gcodeViewer.THREE.AmbientLight(0xff0000, 0.5);
+    renderer.scene.add(ambientLight);
+
+    const spotLight = new gcodeViewer.THREE.SpotLight(0x00ff00, 0.9);
+    spotLight.position.set(200, 400, 300);
+    spotLight.lookAt(new gcodeViewer.THREE.Vector3(0, 0, 0))
+
+    const spotLight2 = new gcodeViewer.THREE.SpotLight(0x0000ff, 0.9);
+    spotLight2.position.set(-200, -400, -300);
+    spotLight2.lookAt(new gcodeViewer.THREE.Vector3(0, 0, 0))
+    renderer.scene.add(spotLight);
+    renderer.scene.add(spotLight2);
+
+    renderer.fitCamera()
+}
+renderer.render().then(() => console.log("rendering finished"))
+```

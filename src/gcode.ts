@@ -48,7 +48,7 @@ class LineMaterial extends ShaderMaterial {
  * three.js. Use .element() to retrieve the DOM canvas element.
  */
 export class GCodeRenderer {
-    private readonly scene: Scene
+    public readonly scene: Scene
     private readonly renderer: WebGLRenderer
     private cameraControl?: OrbitControls
 
@@ -59,7 +59,30 @@ export class GCodeRenderer {
     private readonly parser: GCodeParser
 
     // Public configurations: 
-    
+
+    /**
+     * Here you can replace the default scene setup (called after adding the model).
+     * You can use renderer.scene to get access to it and do whatever you want with it.
+     * The default implementation just adds some lights and then calls renderer.fitCamera().
+     */
+    public setupScene: () => void = () => {
+        // Set up some lights.
+        const ambientLight = new AmbientLight(0xffffff, 0.5);
+        this.scene.add(ambientLight);
+
+        const spotLight = new SpotLight(0xffffff, 0.9);
+        spotLight.position.set(200, 400, 300);
+        spotLight.lookAt(new Vector3(0, 0, 0))
+
+        const spotLight2 = new SpotLight(0xffffff, 0.9);
+        spotLight2.position.set(-200, -400, -300);
+        spotLight2.lookAt(new Vector3(0, 0, 0))
+        this.scene.add(spotLight);
+        this.scene.add(spotLight2);
+
+        this.fitCamera()
+    }
+
     /**
      * Width of travel-lines. Use 0 to hide them. 
      * 
@@ -86,6 +109,7 @@ export class GCodeRenderer {
     public get colorizer(): SegmentColorizer {
         return this.parser.colorizer
     }
+
     /**
      * Set any colorizer implementation to change the segment color based on the segment
      * metadata. Some default implementations are provided.
@@ -107,6 +131,7 @@ export class GCodeRenderer {
     public get radialSegments(): number {
         return this.parser.radialSegments
     }
+
     /**
      * The number of radial segments per line.
      * Less (e.g. 3) provides faster rendering with less memory usage.  
@@ -131,6 +156,7 @@ export class GCodeRenderer {
     public get pointsPerObject(): number {
         return this.parser.pointsPerObject
     }
+
     /**
      * Internally the rendered object is split into several. This allows to reduce the
      * memory consumption while rendering.
@@ -197,7 +223,7 @@ export class GCodeRenderer {
         return camera
     }
 
-    private fitCamera() {
+    public fitCamera() {
         const boundingBox = new Box3(this.parser.min, this.parser.max);
         const center = new Vector3()
         boundingBox.getCenter(center)
@@ -223,21 +249,7 @@ export class GCodeRenderer {
             this.scene.add(new Mesh(g, this.lineMaterial))
         });
 
-        // Set up some lights.
-        const ambientLight = new AmbientLight(0xffffff, 0.5);
-        this.scene.add(ambientLight);
-
-        const spotLight = new SpotLight(0xffffff, 0.9);
-        spotLight.position.set(200, 400, 300);
-        spotLight.lookAt(new Vector3(0, 0, 0))
-
-        const spotLight2 = new SpotLight(0xffffff, 0.9);
-        spotLight2.position.set(-200, -400, -300);
-        spotLight2.lookAt(new Vector3(0, 0, 0))
-        this.scene.add(spotLight);
-        this.scene.add(spotLight2);
-
-        this.fitCamera()
+        this.setupScene()        
     }
 
     private draw() {
