@@ -4,10 +4,12 @@ export class LinePoint {
     public readonly point: Vector3
     public readonly radius: number
     public readonly color: Color
+    public readonly alpha: number
 
-    constructor(point: Vector3, radius: number, color: Color = new Color("#29BEB0")) {
+    constructor(point: Vector3, radius: number, color: Color = new Color("#29BEB0"), alpha: number = 1.0) {
         this.point = point
         this.radius = radius
         this.color = color
+        this.alpha = alpha
     }
 }

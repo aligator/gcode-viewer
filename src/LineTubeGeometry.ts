@@ -14,6 +14,7 @@ interface PointData {
     vertices: number[]
     normals: number[]
     colors: number[]
+    alpha: number
 }
 
 /**
@@ -38,8 +39,9 @@ export class LineTubeGeometry extends BufferGeometry {
     private vertices: number[] = []
     private normals: number[] = []
     private colors: number[] = []
-    private uvs: number[] = [];
-    private indices: number[] = [];
+    private alphas: number[] = []
+    private uvs: number[] = []
+    private indices: number[] = []
 
     private segmentsRadialNumbers: number[] = []
 
@@ -86,6 +88,7 @@ export class LineTubeGeometry extends BufferGeometry {
         this.setAttribute('position', new Float32BufferAttribute(this.vertices, 3));
         this.setAttribute('normal', new Float32BufferAttribute(this.normals, 3));
         this.setAttribute('color', new Float32BufferAttribute(this.colors, 3));
+        this.setAttribute('alpha', new Float32BufferAttribute(this.alphas, 1));
 
         this.generateUVs();
         this.setAttribute('uv', new Float32BufferAttribute(this.uvs, 2));
@@ -101,6 +104,7 @@ export class LineTubeGeometry extends BufferGeometry {
         this.normals = []
         this.colors = []
         this.uvs = []
+        this.alphas = []
 
         // The vertices are needed to slice. For now they need to be kept.
     }
@@ -162,7 +166,7 @@ export class LineTubeGeometry extends BufferGeometry {
 
         const lastRadius = this.pointsBuffer[i-1]?.radius || 0
 
-        function createPointData(pointNr: number, radialNr: number, normal: Vector3, point: Vector3, radius: number, color: Color): PointData {
+        function createPointData(pointNr: number, radialNr: number, normal: Vector3, point: Vector3, radius: number, color: Color, alpha: number): PointData {
             return {
                 pointNr,
                 radialNr,
@@ -172,7 +176,8 @@ export class LineTubeGeometry extends BufferGeometry {
                     point.y + radius * normal.y,
                     point.z + radius * normal.z
                 ],
-                colors: color.toArray()
+                colors: color.toArray(),
+                alpha,
             }
         }
 
@@ -200,18 +205,18 @@ export class LineTubeGeometry extends BufferGeometry {
             // When the previous point doesn't exist, create one with the radius 0 (lastRadius is set to 0 in this case),
             // to create a closed starting point.
             if (prevPoint === undefined) {
-                segmentsPoints[0].push(createPointData(i, j, normal, point.point, lastRadius, point.color))
+                segmentsPoints[0].push(createPointData(i, j, normal, point.point, lastRadius, point.color, point.alpha))
             }
 
             // Then insert the current point with the current radius
-            segmentsPoints[1].push(createPointData(i, j, normal, point.point, point.radius, point.color))
+            segmentsPoints[1].push(createPointData(i, j, normal, point.point, point.radius, point.color, point.alpha))
 
             // And also the next point with the current radius to finish the current line.
-            segmentsPoints[2].push(createPointData(i, j, normal, nextPoint.point, point.radius, point.color))
+            segmentsPoints[2].push(createPointData(i, j, normal, nextPoint.point, point.radius, point.color, point.alpha))
 
             // if the next point is the last one, also finish the line by inserting one with zero radius.
             if (nextNextPoint === undefined) {
-                segmentsPoints[3].push(createPointData(i+1, j, normal, nextPoint.point, 0, point.color))
+                segmentsPoints[3].push(createPointData(i+1, j, normal, nextPoint.point, 0, point.color, point.alpha))
             }
         }
 
@@ -221,6 +226,7 @@ export class LineTubeGeometry extends BufferGeometry {
                 pp.normals && this.normals.push(...pp.normals);
                 pp.vertices && this.vertices.push(...pp.vertices);
                 pp.colors && this.colors.push(...pp.colors);
+                pp.alpha && this.alphas.push(pp.alpha);
             });
             this.segmentsRadialNumbers.push(...p.map((cur) => cur.radialNr))
         })
