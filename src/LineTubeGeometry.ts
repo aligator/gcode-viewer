@@ -18,10 +18,10 @@ interface PointData {
 
 /**
  * This Tube geometry is similar to the TubeGeometry from three.js but
- * it draws the tube exactly like the given lines. It does not re-calculate 
+ * it draws the tube exactly like the given lines. It does not re-calculate
  * the segments using a curve, instead each point is exactly where it should be.
  * Also it provides an easy way to colorize each segment.
- * 
+ *
  * TODO: As I searched for something like this quite some time without success, this
  * would be a good part to extract into another lib...
  */
@@ -73,8 +73,8 @@ export class LineTubeGeometry extends BufferGeometry {
     }
 
     public finish() {
-        // If the there are only two points in total it has to 
-        // be handled separately as the add mehtod only starts 
+        // If the there are only two points in total it has to
+        // be handled separately as the add mehtod only starts
         // segment generation at min 3 points.
         if (this.pointsBuffer.length == 2) {
             this.generateSegment(0);
@@ -125,7 +125,7 @@ export class LineTubeGeometry extends BufferGeometry {
         if (start < 0 || end < 0) {
             throw new Error("negative values are not supported, yet")
         }
-        
+
         const seg = (this.radialSegments + 1) * 6
 
         let startI = start * seg * 2
@@ -140,15 +140,15 @@ export class LineTubeGeometry extends BufferGeometry {
             // remove the starting
             startI += this.radialSegments * 6
         }
-        
+
         // TODO: render an 'ending / starting' so that there is no hole.
         this.setIndex(this.indices.slice(startI, endI));
     }
 
     private generateSegment(i: number) {
         let prevPoint = this.pointsBuffer[i-1]
-        
-        // point and nextPoint should always exist... 
+
+        // point and nextPoint should always exist...
         let point = this.pointsBuffer[i]
         let nextPoint = this.pointsBuffer[i+1]
         let nextNextPoint = this.pointsBuffer[i+2]
@@ -190,7 +190,7 @@ export class LineTubeGeometry extends BufferGeometry {
             const cos = -Math.cos(v);
 
             // vertex
-            
+
             let normal = new Vector3()
             normal.x = (cos * frame.normals[0].x + sin * frame.binormals[0].x);
             normal.y = (cos * frame.normals[0].y + sin * frame.binormals[0].y);
@@ -217,12 +217,11 @@ export class LineTubeGeometry extends BufferGeometry {
 
         // Save everything into the buffers.
         segmentsPoints.forEach((p) => {
-            const normals = p.reduce((prev, cur) => [...prev, ...cur.normals], [] as number[])
-            this.normals.push(...normals)
-            const colors = p.reduce((prev, cur) => [...prev, ...cur.colors], [] as number[])
-            this.colors.push(...colors)
-            const vertices = p.reduce((prev, cur) => [...prev, ...cur.vertices], [] as number[])
-            this.vertices.push(...vertices)
+            p.forEach((pp) => {
+                pp.normals && this.normals.push(...pp.normals);
+                pp.vertices && this.vertices.push(...pp.vertices);
+                pp.colors && this.colors.push(...pp.colors);
+            });
             this.segmentsRadialNumbers.push(...p.map((cur) => cur.radialNr))
         })
         
@@ -266,7 +265,7 @@ export class LineTubeGeometry extends BufferGeometry {
 		return tangent;
 	}
 
-    private computeFrenetFrames(points: Vector3[], closed: boolean) {    
+    private computeFrenetFrames(points: Vector3[], closed: boolean) {
         // Slightly modified from the three.js curve.
 
 		// see http://www.cs.indiana.edu/pub/techreports/TR425.pdf
@@ -285,7 +284,7 @@ export class LineTubeGeometry extends BufferGeometry {
 			t.normalize();
             tangents.push(t)
 		}
-        
+
         const segments = tangents.length-1
 
 		// select an initial normal vector perpendicular to the first tangent vector,
@@ -376,5 +375,5 @@ export class LineTubeGeometry extends BufferGeometry {
 			normals: normals,
 			binormals: binormals
 		};
-	}    
+	}
 }
