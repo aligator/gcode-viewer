@@ -1,13 +1,16 @@
 import {
-    Vector3,
-    LineCurve3,
+    Vector3
 } from 'three'
 import { LineTubeGeometry } from "./LineTubeGeometry";
 import { LinePoint } from "./LinePoint";
 import { SegmentColorizer, SimpleColorizer } from './SegmentColorizer';
 
+function getLength(lastPoint: Vector3, newPoint: Vector3) {
+    const distant = (lastPoint.x - newPoint.x) ** 2 + (lastPoint.y - newPoint.y) ** 2 + (lastPoint.z - newPoint.z) ** 2;
+    return distant ** 0.5;
+}
 /**
- * GCode renderer which parses a GCode file and displays it using 
+ * GCode renderer which parses a GCode file and displays it using
  * three.js. Use .element() to retrieve the DOM canvas element.
  */
 export class GCodeParser {
@@ -25,11 +28,11 @@ export class GCodeParser {
 
     private layerIndex: {start: number, end: number}[] = []
 
-    // Public configurations: 
-    
+    // Public configurations:
+
     /**
-     * Width of travel-lines. Use 0 to hide them. 
-     * 
+     * Width of travel-lines. Use 0 to hide them.
+     *
      * @type number
      */
     public travelWidth: number = 0.01
@@ -37,16 +40,16 @@ export class GCodeParser {
     /**
      * Set any colorizer implementation to change the segment color based on the segment
      * metadata. Some default implementations are provided.
-     * 
+     *
      * @type SegmentColorizer
      */
     public colorizer: SegmentColorizer = new SimpleColorizer()
 
     /**
      * The number of radial segments per line.
-     * Less (e.g. 3) provides faster rendering with less memory usage.  
+     * Less (e.g. 3) provides faster rendering with less memory usage.
      * More (e.g. 8) provides a better look.
-     * 
+     *
      * @default 8
      * @type number
      */
@@ -57,7 +60,7 @@ export class GCodeParser {
      * memory consumption while rendering.
      * You can set the number of points per object.
      * In most cases you can leave this at the default.
-     * 
+     *
      * @default 120000
      * @type number
      */
@@ -65,13 +68,13 @@ export class GCodeParser {
 
     /**
      * Creates a new GCode renderer for the given gcode.
-     * It initializes the canvas to the given size and 
+     * It initializes the canvas to the given size and
      * uses the passed color as background.
-     * 
-     * @param {string} gCode 
-     * @param {number} width 
-     * @param {number} height 
-     * @param {Color} background 
+     *
+     * @param {string} gCode
+     * @param {number} width
+     * @param {number} height
+     * @param {Color} background
      */
     constructor(gCode: string) {
         this.gCode = gCode
@@ -84,9 +87,9 @@ export class GCodeParser {
      * This can be used to retrieve some min / max values which may
      * be needed as param for a colorizer.
      * @returns {{
-     *         minTemp: number | undefined, 
-     *         maxTemp: number, 
-     *         minSpeed: number | undefined, 
+     *         minTemp: number | undefined,
+     *         maxTemp: number,
+     *         minSpeed: number | undefined,
      *         maxSpeed: number
      *     }}
      */
@@ -101,7 +104,7 @@ export class GCodeParser {
 
     /**
      * Recalculate the bounding box with the new point.
-     * @param {Vector3} newPoint 
+     * @param {Vector3} newPoint
      */
     private calcMinMax(newPoint: Vector3) {
         if (this.min === undefined) {
@@ -221,7 +224,7 @@ export class GCodeParser {
 
         let lines: (string | undefined)[] = this.gCode.split("\n")
         this.gCode = "" // clear memory
-       
+
         let currentObject = 0
         let lastAddedLinePoint: LinePoint | undefined = undefined
         let pointCount = 0
@@ -265,8 +268,7 @@ export class GCodeParser {
 
                 const newPoint = new Vector3(x, y, z)
 
-                const curve = new LineCurve3(lastPoint, newPoint)
-                const length = curve.getLength()
+                const length = getLength(lastPoint, newPoint)
 
                 if (length !== 0) {
                     let radius = (e - lastE) / length * 10
@@ -288,7 +290,7 @@ export class GCodeParser {
                     });
 
                     // Insert the last point with the current radius.
-                    // As the GCode contains the extrusion for the 'current' line, 
+                    // As the GCode contains the extrusion for the 'current' line,
                     // but the LinePoint contains the radius for the 'next' line
                     // we need to combine the last point with the current radius.
                     addLine(new LinePoint(lastPoint.clone(), radius, color))
@@ -330,6 +332,7 @@ export class GCodeParser {
             } else if (cmd[0] === "G92") {
                 // set state
                 lastLastPoint.copy(lastPoint)
+                // TODO fix:  'parseValue' value may be zero which is also not truthy
                 lastPoint = new Vector3(
                     this.parseValue(cmd.find((v) => v[0] === "X")) || lastPoint.x,
                     this.parseValue(cmd.find((v) => v[0] === "Y")) || lastPoint.y,
@@ -351,7 +354,7 @@ export class GCodeParser {
         if (this.combinedLines[currentObject]) {
             this.combinedLines[currentObject].finish()
         }
-       
+
 
         // Sort the layers by starting line number.
         this.layerIndex = Array.from(layerPointsCache.values()).sort((v1, v2) => v1.start - v2.start)
@@ -362,9 +365,9 @@ export class GCodeParser {
     /**
      * Slices the rendered model based on the passed start and end point numbers.
      * (0, pointsCount()) renders everything
-     * 
+     *
      * Note: Currently negative values are not allowed.
-     * 
+     *
      * @param {number} start the starting segment
      * @param {number} end the ending segment (excluding)
      */
@@ -393,8 +396,8 @@ export class GCodeParser {
                 if (objectStart > 0) {
                     from++
                 }
-            } 
-            
+            }
+
             if (i == objectEnd) {
                 to = end - i * this.pointsPerObject
                 // Only if it is not the last object, add the last point to the calculation.
@@ -402,7 +405,7 @@ export class GCodeParser {
                     to++
                 }
             }
-            
+
             if (i < objectStart || i > objectEnd) {
                 from = 0
                 to = 0
@@ -415,9 +418,9 @@ export class GCodeParser {
     /**
      * Slices the rendered model based on the passed start and end line numbers.
      * (0, layerCount()) renders everything
-     * 
+     *
      * Note: Currently negative values are not allowed.
-     * 
+     *
      * @param {number} start the starting layer
      * @param {number} end the ending layer (excluding)
      */
@@ -435,7 +438,7 @@ export class GCodeParser {
 
     /**
      * Get the amount of points in the model.
-     * 
+     *
      * @returns {number}
      */
     public pointsCount(): number {
@@ -454,7 +457,7 @@ export class GCodeParser {
      * Get the amount of layers in the model.
      * This is an approximation which may be incorrect if the
      * nozzle moves downwards mid print.
-     * 
+     *
      * @returns {number}
      */
     public layerCount(): number {
