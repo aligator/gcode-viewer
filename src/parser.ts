@@ -288,12 +288,15 @@ export class GCodeParser {
                         gCodeLine: lineNumber,
                     }
                     const color = this.colorizer.getColor(meta);
-
+                    
+                    // just for testing...
+                    const alpha = color.r === 0 && color.g === 0 && color.b === 0 ? 0 : 1
+                    
                     // Insert the last point with the current radius.
                     // As the GCode contains the extrusion for the 'current' line, 
                     // but the LinePoint contains the radius for the 'next' line
                     // we need to combine the last point with the current radius.
-                    addLine(new LinePoint(lastPoint.clone(), radius, color))
+                    addLine(new LinePoint(lastPoint.clone(), radius, color, alpha))
 
                     // Try to figure out the layer start and end points.
                     if (lastPoint.z !== newPoint.z) {

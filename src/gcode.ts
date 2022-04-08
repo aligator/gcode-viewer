@@ -16,6 +16,8 @@ import {
     MultiplyOperation,
     UniformsUtils,
     ShaderLib,
+    Blending,
+    NormalBlending,
 } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { lineMaterialFragmentShader } from './meshphong_frag.glsl'
@@ -31,6 +33,7 @@ class LineMaterial extends ShaderMaterial {
             fragmentShader: lineMaterialFragmentShader,
             lights: true,
             vertexColors: true,
+            blending: NormalBlending,
         })
 
         this.setValues({
@@ -182,7 +185,7 @@ export class GCodeRenderer {
      */
     constructor(gCode: string, width: number, height: number, background: Color) {
         this.scene = new Scene()
-        this.renderer = new WebGLRenderer()
+        this.renderer = new WebGLRenderer({alpha: true})
         this.renderer.setSize(width, height)
         this.renderer.setClearColor(background, 1)
         this.camera = this.newCamera(width, height)
@@ -257,6 +260,7 @@ export class GCodeRenderer {
             return
         }
 
+        this.renderer.clear()
         this.renderer.render(this.scene, this.camera)
     }
 

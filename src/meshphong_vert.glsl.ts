@@ -22,8 +22,9 @@ varying vec3 vViewPosition;
 #include <logdepthbuf_pars_vertex>
 #include <clipping_planes_pars_vertex>
 
-void main() {
+varying float alpha;
 
+void main() {
 	#include <uv_vertex>
 	#include <uv2_vertex>
 	#include <color_vertex>
