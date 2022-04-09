@@ -58,6 +58,7 @@ export class LineTubeGeometry extends BufferGeometry {
         this.normals = []
         this.vertices = []
         this.colors = []
+        this.alphas = []
         this.uvs = []
         this.indices = []
         this.segmentsRadialNumbers = []
@@ -85,11 +86,11 @@ export class LineTubeGeometry extends BufferGeometry {
             this.generateSegment(1);
         }
 
+        console.log(this.alphas.filter(a => a === 0).length, this.alphas.filter(a => a === 1).length)
         this.setAttribute('position', new Float32BufferAttribute(this.vertices, 3));
         this.setAttribute('normal', new Float32BufferAttribute(this.normals, 3));
         this.setAttribute('color', new Float32BufferAttribute(this.colors, 3));
         this.setAttribute('alpha', new Float32BufferAttribute(this.alphas, 1));
-
         this.generateUVs();
         this.setAttribute('uv', new Float32BufferAttribute(this.uvs, 2));
 
@@ -103,8 +104,8 @@ export class LineTubeGeometry extends BufferGeometry {
         // these are now in the attribute buffers - can be deleted
         this.normals = []
         this.colors = []
-        this.uvs = []
         this.alphas = []
+        this.uvs = []
 
         // The vertices are needed to slice. For now they need to be kept.
     }
@@ -166,7 +167,7 @@ export class LineTubeGeometry extends BufferGeometry {
 
         const lastRadius = this.pointsBuffer[i-1]?.radius || 0
 
-        function createPointData(pointNr: number, radialNr: number, normal: Vector3, point: Vector3, radius: number, color: Color, alpha: number): PointData {
+        function createPointData(pointNr: number, radialNr: number, normal: Vector3, point: Vector3, radius: number, color: Color, alpha: number): PointData {         
             return {
                 pointNr,
                 radialNr,
@@ -223,10 +224,10 @@ export class LineTubeGeometry extends BufferGeometry {
         // Save everything into the buffers.
         segmentsPoints.forEach((p) => {
             p.forEach((pp) => {
-                pp.normals && this.normals.push(...pp.normals);
-                pp.vertices && this.vertices.push(...pp.vertices);
-                pp.colors && this.colors.push(...pp.colors);
-                pp.alpha && this.alphas.push(pp.alpha);
+                this.normals.push(...pp.normals);
+                this.vertices.push(...pp.vertices);
+                this.colors.push(...pp.colors);
+                this.alphas.push(pp.alpha);
             });
             this.segmentsRadialNumbers.push(...p.map((cur) => cur.radialNr))
         })

@@ -1,5 +1,5 @@
 export const lineMaterialFragmentShader = /* glsl */`
-#define PHONG
+#define LINE
 
 uniform vec3 diffuse;
 uniform vec3 emissive;
@@ -32,7 +32,13 @@ uniform float opacity;
 #include <logdepthbuf_pars_fragment>
 #include <clipping_planes_pars_fragment>
 
+varying float alpha;
+
 void main() {
+	if (alpha == 1.0) 
+	{
+		discard;
+	}
 
 	#include <clipping_planes_fragment>
 
@@ -70,6 +76,5 @@ void main() {
 	#include <fog_fragment>
 	#include <premultiplied_alpha_fragment>
 	#include <dithering_fragment>
-
 }
 `;

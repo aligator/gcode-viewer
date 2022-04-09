@@ -17,16 +17,16 @@
                 // First parse the ;TYPE: comments to build an example config for the GCodeRenderer.
                 // Note that the example gcode does not indicate travel moves easily -> just ignore that fact for simplicity.
 
-                const TRANSPARENT_COLOR = new gcodeViewer.Color()
+                const TRANSPARENT_COLOR = new gcodeViewer.Color('#000000')
 
-                const INNER_COLOR = new gcodeViewer.Color('#ff0000')
+                const INNER_COLOR = onlyWall ? TRANSPARENT_COLOR : new gcodeViewer.Color('#ff0000')
                 const OUTER_COLOR = new gcodeViewer.Color('#00ff00')
-                const SKIRT_COLOR = new gcodeViewer.Color('#ffff00')
-                const FILL_COLOR = new gcodeViewer.Color('#ffff00')
-                const BOTTOM_FILL_COLOR = new gcodeViewer.Color('#ffff00')
-                const INTERNAL_FILL = new gcodeViewer.Color('#00ffff')
-                const TOP_FILL = new gcodeViewer.Color('#ff00ff')
-                const DEFAULT_COLOR = new gcodeViewer.Color('#0000ff')
+                const SKIRT_COLOR = onlyWall ? TRANSPARENT_COLOR : new gcodeViewer.Color('#ffff00')
+                const FILL_COLOR = onlyWall ? TRANSPARENT_COLOR : new gcodeViewer.Color('#ffff00')
+                const BOTTOM_FILL_COLOR = onlyWall ? TRANSPARENT_COLOR : new gcodeViewer.Color('#ffff00')
+                const INTERNAL_FILL = onlyWall ? TRANSPARENT_COLOR : new gcodeViewer.Color('#00ffff')
+                const TOP_FILL = onlyWall ? TRANSPARENT_COLOR : new gcodeViewer.Color('#ff00ff')
+                const DEFAULT_COLOR = onlyWall ? TRANSPARENT_COLOR : new gcodeViewer.Color('#0000ff')
                 let colorConfig = []
 
                 gcode.split("\n").forEach(function(line, i) {
