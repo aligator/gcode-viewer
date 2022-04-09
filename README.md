@@ -39,6 +39,7 @@ const renderer = new GCodeRenderer(gcodeString, 800, 600, new Color(0x808080))
 // * SimpleColorizer (default) - sets all lines to the same color
 // * SpeedColorizer - colorizes based on the speed / feed rate
 // * TempColorizer - colorizes based on the temperature
+// * LineColorizer - colorizes based on the gcodeLine
 renderer.colorizer = new SpeedColorizer(this.renderer.getMinMaxValues().minSpeed || 0, this.renderer.getMinMaxValues().maxSpeed)
 
 document.getElementById("gcode-viewer").append(renderer.element())

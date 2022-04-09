@@ -9,18 +9,48 @@ export interface SegmentMetadata {
     speed: number
 
     gCodeLine: number
-
-    // TODO: Linetype based on comments in gcode
 }
+
+const DEFAULT_COLOR = new Color("#29BEB0")
 
 export interface SegmentColorizer {
     getColor(meta: SegmentMetadata): Color
 }
 
+
+export interface LineColorizerOptions {
+    defaultColor: Color
+}
+
+export type LineColorConfig = {toLine: number, color: Color}[]
+
+export class LineColorizer {
+    // This assumes that getColor is called ordered by gCodeLine.
+    private currentConfigIndex: number = 0
+
+    constructor(
+        private readonly lineColorConfig: LineColorConfig, 
+        private readonly options?: LineColorizerOptions
+    ) {}
+
+    getColor(meta: SegmentMetadata): Color {
+        // Safeguard check if the config is too short.
+        if (this.lineColorConfig[this.currentConfigIndex] === undefined) {
+            return this.options?.defaultColor || DEFAULT_COLOR
+        }
+
+        if (this.lineColorConfig[this.currentConfigIndex].toLine < meta.gCodeLine) {
+            this.currentConfigIndex++
+        }
+
+        return this.lineColorConfig[this.currentConfigIndex].color || this.options?.defaultColor || DEFAULT_COLOR
+    }
+}
+
 export class SimpleColorizer implements SegmentColorizer {
     private readonly color
     
-    constructor(color = new Color("#29BEB0")) {
+    constructor(color = DEFAULT_COLOR) {
         this.color = color
     }
 
