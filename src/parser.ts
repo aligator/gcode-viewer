@@ -249,7 +249,7 @@ export class GCodeParser {
 
         // Create the geometry.
         //this.combinedLines[oNr] = new LineTubeGeometry(this.radialSegments)
-        lines.forEach((line, i)=> {
+        lines.forEach((line, lineNumber)=> {
             if (line === undefined) {
                 return
             }
@@ -286,7 +286,8 @@ export class GCodeParser {
                         segmentStart: lastPoint,
                         segmentEnd: newPoint,
                         speed: f,
-                        temp: hotendTemp
+                        temp: hotendTemp,
+                        gCodeLine: lineNumber,
                     });
 
                     // Insert the last point with the current radius.
@@ -347,7 +348,7 @@ export class GCodeParser {
                 hotendTemp = this.parseValue(cmd.find((v) => v[0] === "S")) || 0
             }
 
-            lines[i] = undefined
+            lines[lineNumber] = undefined
         })
 
         // Finish last object
