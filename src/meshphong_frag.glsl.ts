@@ -35,10 +35,11 @@ uniform float opacity;
 varying float alpha;
 
 void main() {
-	if (alpha == 1.0) 
-	{
-		discard;
-	}
+	// if (alpha == 0.0) 
+	// {
+	// 	discard;
+	// 	return;
+	// }
 
 	#include <clipping_planes_fragment>
 
