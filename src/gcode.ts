@@ -9,10 +9,42 @@ import {
     AmbientLight,
     SpotLight,
     MeshPhongMaterial,
+    RawShaderMaterial,
+    ShaderMaterial,
+    TangentSpaceNormalMap,
+    Vector2,
+    MultiplyOperation,
+    UniformsUtils,
+    ShaderLib,
+    Blending,
+    NormalBlending,
 } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { lineMaterialFragmentShader } from './meshphong_frag.glsl'
+import { lineMaterialVertexShader } from './meshphong_vert.glsl'
 import { GCodeParser } from './parser'
 import { SegmentColorizer } from './SegmentColorizer'
+
+class LineMaterial extends ShaderMaterial {
+    constructor() {
+        super({
+            name: 'line-material',
+            vertexShader: lineMaterialVertexShader,
+            fragmentShader: lineMaterialFragmentShader,
+            lights: true,
+            vertexColors: true,
+            blending: NormalBlending,
+        })
+
+        this.setValues({
+            uniforms: UniformsUtils.merge([
+                ShaderLib.phong.uniforms,
+                { diffuse: { value: new Color('#ffffff') } },
+                { time: { value: 0.0 } }
+            ])
+        })
+    }
+}
 
 /**
  * GCode renderer which parses a GCode file and displays it using 
@@ -25,7 +57,7 @@ export class GCodeRenderer {
 
     private camera: PerspectiveCamera
 
-    private lineMaterial = new MeshPhongMaterial({  vertexColors: true } )
+    private lineMaterial = new LineMaterial()
 
     private readonly parser: GCodeParser
 
@@ -153,7 +185,7 @@ export class GCodeRenderer {
      */
     constructor(gCode: string, width: number, height: number, background: Color) {
         this.scene = new Scene()
-        this.renderer = new WebGLRenderer()
+        this.renderer = new WebGLRenderer({alpha: true})
         this.renderer.setSize(width, height)
         this.renderer.setClearColor(background, 1)
         this.camera = this.newCamera(width, height)
@@ -228,6 +260,7 @@ export class GCodeRenderer {
             return
         }
 
+        this.renderer.clear()
         this.renderer.render(this.scene, this.camera)
     }
 
