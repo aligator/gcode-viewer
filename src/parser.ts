@@ -135,11 +135,24 @@ export class GCodeParser {
         }
     }
 
-    private parseValue(value?: string): number | undefined {
+    /**
+     * Parses a string cmd value.
+     * The first char has to be a letter.
+     * If value is not set (undefined | "") or if the resulting number is NaN,
+     * the default value is returned.
+     * 
+     * If the defaultValue is a number, the result can never be undefined due to type constraints.
+     * 
+     * @param value 
+     * @param defaultValue {number | undefined} may be any number or undefined.
+     * @returns if the defaultValue is undefined, this can be undefined. Else it will always be a number.
+     */
+    private parseValue<DefaultType extends number | undefined>(value: string | undefined, defaultValue: DefaultType): number | DefaultType {
         if (!value) {
-            return undefined
+            return defaultValue
         }
-        return Number.parseFloat(value.substring(1))
+        const parsedValue = Number.parseFloat(value.substring(1))
+        return parsedValue === NaN ? defaultValue : parsedValue
     }
 
     /**
@@ -154,7 +167,7 @@ export class GCodeParser {
             const cmd = line.split(" ")
             if (cmd[0] === "G0" || cmd[0] === "G1") {
                 // Feed rate -> speed
-                const f = this.parseValue(cmd.find((v) => v[0] === "F"))
+                const f = this.parseValue(cmd.find((v) => v[0] === "F"), undefined)
 
                 if (f === undefined) {
                     return
@@ -170,7 +183,7 @@ export class GCodeParser {
                 // hot end temperature
                 // M104 S205 ; set hot end temp
                 // M109 S205 ; wait for hot end temp
-                const hotendTemp = this.parseValue(cmd.find((v) => v[0] === "S")) || 0
+                const hotendTemp = this.parseValue(cmd.find((v) => v[0] === "S"), 0)
 
                 if (hotendTemp > this.maxTemp) {
                     this.maxTemp = hotendTemp
@@ -209,7 +222,7 @@ export class GCodeParser {
 
         // Retrieves a value taking into account possible relative values.
         const getValue = (cmd: string[], name: string, last: number, relative: boolean): number => {
-            let val = this.parseValue(cmd.find((v) => v[0] === name))
+            let val = this.parseValue(cmd.find((v) => v[0] === name), undefined)
 
             if (val !== undefined) {
                 if (relative) {
@@ -264,7 +277,7 @@ export class GCodeParser {
                 const y = getValue(cmd,"Y", lastPoint.y, relative.y)
                 const z = getValue(cmd,"Z", lastPoint.z, relative.z)
                 const e = getValue(cmd,"E", lastE, relative.e)
-                const f = this.parseValue(cmd.find((v) => v[0] === "F")) || lastF
+                const f = this.parseValue(cmd.find((v) => v[0] === "F"), lastF)
 
                 const newPoint = new Vector3(x, y, z)
 
@@ -333,19 +346,18 @@ export class GCodeParser {
             } else if (cmd[0] === "G92") {
                 // set state
                 lastLastPoint.copy(lastPoint)
-                // TODO fix:  'parseValue' value may be zero which is also not truthy
                 lastPoint = new Vector3(
-                    this.parseValue(cmd.find((v) => v[0] === "X")) || lastPoint.x,
-                    this.parseValue(cmd.find((v) => v[0] === "Y")) || lastPoint.y,
-                    this.parseValue(cmd.find((v) => v[0] === "Z")) || lastPoint.z
+                    this.parseValue(cmd.find((v) => v[0] === "X"), lastPoint.x),
+                    this.parseValue(cmd.find((v) => v[0] === "Y"), lastPoint.y),
+                    this.parseValue(cmd.find((v) => v[0] === "Z"), lastPoint.z),
                 )
-                lastE = this.parseValue(cmd.find((v) => v[0] === "E")) || lastE
+                lastE = this.parseValue(cmd.find((v) => v[0] === "E"), lastE)
 
             // Hot end temperature.
             } else if (cmd[0] === "M104" || cmd[0] === "M109") {
                 // M104 S205 ; start heating hot end
                 // M109 S205 ; wait for hot end temperature
-                hotendTemp = this.parseValue(cmd.find((v) => v[0] === "S")) || 0
+                hotendTemp = this.parseValue(cmd.find((v) => v[0] === "S"), 0)
             }
 
             lines[lineNumber] = undefined
