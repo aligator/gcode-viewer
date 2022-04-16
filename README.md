@@ -13,7 +13,7 @@ several browser-OS combination do not support line thickness rendering other tha
 
 * slicing the viewed lines either by layer or line by line
 * line thickness based on the extrusion amount
-* colorize the lines based on line-metadata such as temperature or speed
+* colorize the lines based on line-metadata such as temperature, speed or gcode line
 * changeable amount of radial segments per line - less (e.g. 3) is faster and needs less RAM, more (e.g. 8 -> the default) may look better.
 * uses orbit controls from three js
 * relative movement for xyz and extrusion (not tested yet)
