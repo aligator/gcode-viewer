@@ -232,6 +232,10 @@ export class GCodeParser {
                 val = last
             }
 
+            if (Number.isNaN(val)) {
+                throw new Error(`could not read the value in cmd '${cmd}'`)
+            }
+
             return val
         }
 
@@ -285,6 +289,11 @@ export class GCodeParser {
 
                 if (length !== 0) {
                     let radius = (e - lastE) / length * 10
+                    
+                    // Hide negative extrusions as only move-extrusions
+                    if (radius < 0) {
+                        radius = 0
+                    }
 
                     if (radius == 0) {
                         radius = this.travelWidth
@@ -358,6 +367,33 @@ export class GCodeParser {
                 // M104 S205 ; start heating hot end
                 // M109 S205 ; wait for hot end temperature
                 hotendTemp = this.parseValue(cmd.find((v) => v[0] === "S"), 0)
+           
+            // Absolute axes
+            } else if (cmd[0] === "G90") {
+                relative.x = false
+                relative.y = false
+                relative.z = false
+                relative.e = false
+
+            // Relative axes
+            } else if (cmd[0] === "G91") {
+                relative.x = true
+                relative.y = true
+                relative.z = true
+                relative.e = true
+
+            // Absolute extrusion
+            } else if (cmd[0] === "M82") {
+                relative.e = false
+
+            // Relative extrusion
+            } else if (cmd[0] === "M83") {
+                relative.e = true
+
+            // Inch values
+            } else if (cmd[0] === "G20") {
+                // TODO: inch values
+                throw new Error("inch values not implemented yet")
             }
 
             lines[lineNumber] = undefined
