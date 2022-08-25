@@ -16,7 +16,7 @@ several browser-OS combination do not support line thickness rendering other tha
 * colorize the lines based on line-metadata such as temperature, speed or gcode line
 * changeable amount of radial segments per line - less (e.g. 3) is faster and needs less RAM, more (e.g. 8 -> the default) may look better.
 * uses orbit controls from three js
-* relative movement for xyz and extrusion (not tested yet)
+* relative movement for xyz and extrusion
 
 ## Contribution
 You are welcome to help.  
