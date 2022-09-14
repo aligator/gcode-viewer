@@ -177,6 +177,7 @@ export class GCodeRenderer {
 
     private newCamera(width: number, height: number) {
         const camera = new PerspectiveCamera(75, width / height, 0.1, 1000)
+        camera.up.set(0, 0, 1)
         
         if (this.cameraControl) {
             this.cameraControl.dispose()
