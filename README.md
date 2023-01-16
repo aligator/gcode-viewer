@@ -25,6 +25,7 @@ You are welcome to help.
 ## Usage
 ### Examples
 [Take a look at this example.](example/index.html)  
+[Or the extended example with some controls](example/extended.html)
 [Also take a look here.](https://github.com/aligator/dev/blob/main/src/windows/gCodeViewer.tsx)
 
 ### Setup
