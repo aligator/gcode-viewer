@@ -152,7 +152,7 @@ export class GCodeParser {
             return defaultValue
         }
         const parsedValue = Number.parseFloat(value.substring(1))
-        return parsedValue === NaN ? defaultValue : parsedValue
+        return Number.isNaN(parsedValue) ? defaultValue : parsedValue
     }
 
     /**
