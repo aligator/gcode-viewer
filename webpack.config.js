@@ -2,7 +2,12 @@
 const path = require('path');
 const UglifyJsPlugin = require('uglifyjs-webpack-plugin');
 
+const mode = process.env.NODE_ENV || 'development'
+
+console.log("building for ", mode)
+
 module.exports = {
+    mode,
     entry: {
       "gcode-viewer": './src/index.ts',
       'gcode-viewer.min': './src/index.ts'
@@ -15,6 +20,9 @@ module.exports = {
       umdNamedDefine: true
     },
     resolve: {
+      alias: {
+        three: path.resolve('./node_modules/three')
+      },
       extensions: ['.ts', '.js']
     },
     devtool: 'source-map',

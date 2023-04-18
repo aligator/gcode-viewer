@@ -215,13 +215,12 @@ export class GCodeRenderer {
      * Reads the GCode and renders it to a mesh.
      */
     public async render() {
-        this.parser.parse()
+        await this.parser.parse()
         
         this.parser.getGeometries().forEach(g => {
             this.scene.add(new Mesh(g, this.lineMaterial))
         });
-
-        this.setupScene()        
+        this.setupScene()
     }
 
     private draw() {

@@ -1,6 +1,6 @@
 {
   "name": "gcode-viewer",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "A simple gcode viewer lib using three.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -14,7 +14,8 @@
   ],
   "scripts": {
     "clean": "rm -rf _bundles dist dist-esm",
-    "build": "yarn clean && tsc && tsc -m es6 --outDir dist-esm && webpack",
+    "build": "NODE_ENV=production && yarn clean && tsc && tsc -m es6 --outDir dist-esm && webpack",
+    "build:dev": "yarn clean && tsc && tsc -m es6 --outDir dist-esm && webpack",
     "prepublish": "yarn build && yarn test",
     "test": "jest"
   },
