@@ -45,6 +45,8 @@ export class LineTubeGeometry extends BufferGeometry {
 
     constructor(radialSegments = 8) {
         super()
+        
+        //@ts-ignore
         this.type = 'LineTubeGeometry'
         this.pointsLength = 0
         this.radialSegments = radialSegments
@@ -255,7 +257,7 @@ export class LineTubeGeometry extends BufferGeometry {
         }
     }
 
-    toJSON() {
+    toJSON(): string {
         throw new Error("not implemented")
     }
 

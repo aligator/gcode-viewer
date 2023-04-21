@@ -9,6 +9,66 @@ function getLength(lastPoint: Vector3, newPoint: Vector3) {
     const distant = (lastPoint.x - newPoint.x) ** 2 + (lastPoint.y - newPoint.y) ** 2 + (lastPoint.z - newPoint.z) ** 2;
     return distant ** 0.5;
 }
+
+/**
+ * Parses a string cmd value.
+ * The first char has to be a letter.
+ * If value is not set (undefined | "") or if the resulting number is NaN,
+ * the default value is returned.
+ * 
+ * If the defaultValue is a number, the result can never be undefined due to type constraints.
+ * 
+ * @param value 
+ * @param defaultValue {number | undefined} may be any number or undefined.
+ * @returns if the defaultValue is undefined, this can be undefined. Else it will always be a number.
+ */
+function parseValue<DefaultType extends number | undefined>(value: string | undefined, defaultValue: DefaultType): number | DefaultType {
+    if (!value) {
+        return defaultValue
+    }
+    const parsedValue = Number.parseFloat(value.substring(1))
+    return Number.isNaN(parsedValue) ? defaultValue : parsedValue
+}
+
+
+/**
+ * Recalculate the bounding box with the new point.
+ * @param {Vector3} newPoint
+ */
+function calcMinMax(min: Vector3 | undefined, max: Vector3 | undefined, newPoint: Vector3): { min?: Vector3, max?: Vector3 } {
+    const result = { min, max }
+    
+    if (result.min === undefined) {
+        result.min = newPoint.clone()
+    }
+    if (result.max === undefined) {
+        result.max = newPoint.clone()
+    }
+
+    if (newPoint.x >  result.max.x) {
+        result.max.x = newPoint.x
+    }
+    if (newPoint.y > result.max.y) {
+        result.max.y = newPoint.y
+    }
+    if (newPoint.z > result.max.z) {
+        result.max.z = newPoint.z
+    }
+
+    if (newPoint.x <  result.min.x) {
+        result.min.x = newPoint.x
+    }
+    if (newPoint.y <  result.min.y) {
+        result.min.y = newPoint.y
+    }
+    if (newPoint.z <  result.min.z) {
+        result.min.z = newPoint.z
+    }
+
+    return result
+}
+
+
 /**
  * GCode renderer which parses a GCode file and displays it using
  * three.js. Use .element() to retrieve the DOM canvas element.
@@ -103,59 +163,6 @@ export class GCodeParser {
     }
 
     /**
-     * Recalculate the bounding box with the new point.
-     * @param {Vector3} newPoint
-     */
-    private calcMinMax(newPoint: Vector3) {
-        if (this.min === undefined) {
-            this.min = newPoint.clone()
-        }
-        if (this.max === undefined) {
-            this.max = newPoint.clone()
-        }
-
-        if (newPoint.x >  this.max.x) {
-            this.max.x = newPoint.x
-        }
-        if (newPoint.y > this.max.y) {
-            this.max.y = newPoint.y
-        }
-        if (newPoint.z > this.max.z) {
-            this.max.z = newPoint.z
-        }
-
-        if (newPoint.x <  this.min.x) {
-            this.min.x = newPoint.x
-        }
-        if (newPoint.y <  this.min.y) {
-            this.min.y = newPoint.y
-        }
-        if (newPoint.z <  this.min.z) {
-            this.min.z = newPoint.z
-        }
-    }
-
-    /**
-     * Parses a string cmd value.
-     * The first char has to be a letter.
-     * If value is not set (undefined | "") or if the resulting number is NaN,
-     * the default value is returned.
-     * 
-     * If the defaultValue is a number, the result can never be undefined due to type constraints.
-     * 
-     * @param value 
-     * @param defaultValue {number | undefined} may be any number or undefined.
-     * @returns if the defaultValue is undefined, this can be undefined. Else it will always be a number.
-     */
-    private parseValue<DefaultType extends number | undefined>(value: string | undefined, defaultValue: DefaultType): number | DefaultType {
-        if (!value) {
-            return defaultValue
-        }
-        const parsedValue = Number.parseFloat(value.substring(1))
-        return parsedValue === NaN ? defaultValue : parsedValue
-    }
-
-    /**
      * Pre-calculates the min max metadata which may be needed for the colorizers.
      */
     private calcMinMaxMetadata() {
@@ -167,7 +174,7 @@ export class GCodeParser {
             const cmd = line.split(" ")
             if (cmd[0] === "G0" || cmd[0] === "G1") {
                 // Feed rate -> speed
-                const f = this.parseValue(cmd.find((v) => v[0] === "F"), undefined)
+                const f = parseValue(cmd.find((v) => v[0] === "F"), undefined)
 
                 if (f === undefined) {
                     return
@@ -183,7 +190,7 @@ export class GCodeParser {
                 // hot end temperature
                 // M104 S205 ; set hot end temp
                 // M109 S205 ; wait for hot end temp
-                const hotendTemp = this.parseValue(cmd.find((v) => v[0] === "S"), 0)
+                const hotendTemp = parseValue(cmd.find((v) => v[0] === "S"), 0)
 
                 if (hotendTemp > this.maxTemp) {
                     this.maxTemp = hotendTemp
@@ -222,7 +229,7 @@ export class GCodeParser {
 
         // Retrieves a value taking into account possible relative values.
         const getValue = (cmd: string[], name: string, last: number, relative: boolean): number => {
-            let val = this.parseValue(cmd.find((v) => v[0] === name), undefined)
+            let val = parseValue(cmd.find((v) => v[0] === name), undefined)
 
             if (val !== undefined) {
                 if (relative) {
@@ -264,140 +271,164 @@ export class GCodeParser {
             pointCount++
         }
 
-        // Create the geometry.
-        //this.combinedLines[oNr] = new LineTubeGeometry(this.radialSegments)
-        lines.forEach((line, lineNumber)=> {
-            if (line === undefined) {
-                return
-            }
+        function* lineGenerator(travelWidth: number, colorizer: SegmentColorizer): Generator<{point: LinePoint, min?: Vector3, max?: Vector3, lineNumber: number}> {
+            let min: Vector3 | undefined
+            let max: Vector3 | undefined
 
-            // Split off comments.
-            line = line.split(";", 2)[0]
+            // Create the geometry.
+            //this.combinedLines[oNr] = new LineTubeGeometry(this.radialSegments)
+            for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
+                let line = lines[lineNumber]
 
-            const cmd = line.split(" ")
-            // A move command.
-            if (cmd[0] === "G0" || cmd[0] === "G1") {
-                const x = getValue(cmd,"X", lastPoint.x, relative.x)
-                const y = getValue(cmd,"Y", lastPoint.y, relative.y)
-                const z = getValue(cmd,"Z", lastPoint.z, relative.z)
-                const e = getValue(cmd,"E", lastE, relative.e)
-                const f = this.parseValue(cmd.find((v) => v[0] === "F"), lastF)
-
-                const newPoint = new Vector3(x, y, z)
-
-                const length = getLength(lastPoint, newPoint)
-
-                if (length !== 0) {
-                    let radius = (e - lastE) / length * 10
-                    
-                    // Hide negative extrusions as only move-extrusions
-                    if (radius < 0) {
-                        radius = 0
-                    }
-
-                    if (radius == 0) {
-                        radius = this.travelWidth
-                    } else {
-                        // Update the bounding box.
-                        this.calcMinMax(newPoint)
-                    }
-
-                    // Get the color for this line.
-                    const color = this.colorizer.getColor({
-                        radius,
-                        segmentStart: lastPoint,
-                        segmentEnd: newPoint,
-                        speed: f,
-                        temp: hotendTemp,
-                        gCodeLine: lineNumber,
-                    });
-
-                    // Insert the last point with the current radius.
-                    // As the GCode contains the extrusion for the 'current' line,
-                    // but the LinePoint contains the radius for the 'next' line
-                    // we need to combine the last point with the current radius.
-                    addLine(new LinePoint(lastPoint.clone(), radius, color))
-
-                    // Try to figure out the layer start and end points.
-                    if (lastPoint.z !== newPoint.z) {
-                        let last = layerPointsCache.get(lastPoint.z)
-                        let current = layerPointsCache.get(newPoint.z)
-
-                        if (last === undefined) {
-                            last = {
-                                end: 0,
-                                start: 0
-                            }
-                        }
-
-                        if (current === undefined) {
-                            current = {
-                                end: 0,
-                                start: 0
-                            }
-                        }
-
-                        last.end = pointCount-1
-                        current.start = pointCount
-
-                        layerPointsCache.set(lastPoint.z, last)
-                        layerPointsCache.set(newPoint.z, current)
-                    }
+                if (line === undefined) {
+                    return
                 }
 
-                // Save the data.
-                lastLastPoint.copy(lastPoint)
-                lastPoint.copy(newPoint)
-                lastE = e
-                lastF = f
+                // Split off comments.
+                line = line.split(";", 2)[0]
 
-            // Set a value directly.
-            } else if (cmd[0] === "G92") {
-                // set state
-                lastLastPoint.copy(lastPoint)
-                lastPoint = new Vector3(
-                    this.parseValue(cmd.find((v) => v[0] === "X"), lastPoint.x),
-                    this.parseValue(cmd.find((v) => v[0] === "Y"), lastPoint.y),
-                    this.parseValue(cmd.find((v) => v[0] === "Z"), lastPoint.z),
-                )
-                lastE = this.parseValue(cmd.find((v) => v[0] === "E"), lastE)
+                const cmd = line.split(" ")
+                // A move command.
+                if (cmd[0] === "G0" || cmd[0] === "G1") {
+                    const x = getValue(cmd,"X", lastPoint.x, relative.x)
+                    const y = getValue(cmd,"Y", lastPoint.y, relative.y)
+                    const z = getValue(cmd,"Z", lastPoint.z, relative.z)
+                    const e = getValue(cmd,"E", lastE, relative.e)
+                    const f = parseValue(cmd.find((v) => v[0] === "F"), lastF)
 
-            // Hot end temperature.
-            } else if (cmd[0] === "M104" || cmd[0] === "M109") {
-                // M104 S205 ; start heating hot end
-                // M109 S205 ; wait for hot end temperature
-                hotendTemp = this.parseValue(cmd.find((v) => v[0] === "S"), 0)
-           
-            // Absolute axes
-            } else if (cmd[0] === "G90") {
-                relative.x = false
-                relative.y = false
-                relative.z = false
-                relative.e = false
+                    const newPoint = new Vector3(x, y, z)
 
-            // Relative axes
-            } else if (cmd[0] === "G91") {
-                relative.x = true
-                relative.y = true
-                relative.z = true
-                relative.e = true
+                    const length = getLength(lastPoint, newPoint)
 
-            // Absolute extrusion
-            } else if (cmd[0] === "M82") {
-                relative.e = false
+                    if (length !== 0) {
+                        let radius = (e - lastE) / length * 10
+                        
+                        // Hide negative extrusions as only move-extrusions
+                        if (radius < 0) {
+                            radius = 0
+                        }
 
-            // Relative extrusion
-            } else if (cmd[0] === "M83") {
-                relative.e = true
+                        if (radius == 0) {
+                            radius = travelWidth
+                        } else {
+                            // Update the bounding box.
+                            const { min: newMin, max: newMax } = calcMinMax(min, max, newPoint)
+                            min = newMin
+                            max = newMax
+                        }
 
-            // Inch values
-            } else if (cmd[0] === "G20") {
-                // TODO: inch values
-                throw new Error("inch values not implemented yet")
+                        // Get the color for this line.
+                        const color = colorizer.getColor({
+                            radius,
+                            segmentStart: lastPoint,
+                            segmentEnd: newPoint,
+                            speed: f,
+                            temp: hotendTemp,
+                            gCodeLine: lineNumber,
+                        });
+
+                        // Insert the last point with the current radius.
+                        // As the GCode contains the extrusion for the 'current' line,
+                        // but the LinePoint contains the radius for the 'next' line
+                        // we need to combine the last point with the current radius.
+                        yield {min, max, point: new LinePoint(lastPoint.clone(), radius, color), lineNumber}
+
+                        // Try to figure out the layer start and end points.
+                        if (lastPoint.z !== newPoint.z) {
+                            let last = layerPointsCache.get(lastPoint.z)
+                            let current = layerPointsCache.get(newPoint.z)
+
+                            if (last === undefined) {
+                                last = {
+                                    end: 0,
+                                    start: 0
+                                }
+                            }
+
+                            if (current === undefined) {
+                                current = {
+                                    end: 0,
+                                    start: 0
+                                }
+                            }
+
+                            last.end = pointCount-1
+                            current.start = pointCount
+
+                            layerPointsCache.set(lastPoint.z, last)
+                            layerPointsCache.set(newPoint.z, current)
+                        }
+                    }
+
+                    // Save the data.
+                    lastLastPoint.copy(lastPoint)
+                    lastPoint.copy(newPoint)
+                    lastE = e
+                    lastF = f
+
+                // Set a value directly.
+                } else if (cmd[0] === "G92") {
+                    // set state
+                    lastLastPoint.copy(lastPoint)
+                    lastPoint = new Vector3(
+                        parseValue(cmd.find((v) => v[0] === "X"), lastPoint.x),
+                        parseValue(cmd.find((v) => v[0] === "Y"), lastPoint.y),
+                        parseValue(cmd.find((v) => v[0] === "Z"), lastPoint.z),
+                    )
+                    lastE = parseValue(cmd.find((v) => v[0] === "E"), lastE)
+
+                // Hot end temperature.
+                } else if (cmd[0] === "M104" || cmd[0] === "M109") {
+                    // M104 S205 ; start heating hot end
+                    // M109 S205 ; wait for hot end temperature
+                    hotendTemp = parseValue(cmd.find((v) => v[0] === "S"), 0)
+            
+                // Absolute axes
+                } else if (cmd[0] === "G90") {
+                    relative.x = false
+                    relative.y = false
+                    relative.z = false
+                    relative.e = false
+
+                // Relative axes
+                } else if (cmd[0] === "G91") {
+                    relative.x = true
+                    relative.y = true
+                    relative.z = true
+                    relative.e = true
+
+                // Absolute extrusion
+                } else if (cmd[0] === "M82") {
+                    relative.e = false
+
+                // Relative extrusion
+                } else if (cmd[0] === "M83") {
+                    relative.e = true
+
+                // Inch values
+                } else if (cmd[0] === "G20") {
+                    // TODO: inch values
+                    throw new Error("inch values not implemented yet")
+                }
+
+                lines[lineNumber] = undefined
             }
+        }
+        
 
-            lines[lineNumber] = undefined
-        })
+        let gen = lineGenerator(this.travelWidth, this.colorizer)
+        const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+        
+        for (let job of gen) {
+            this.min = job.min
+            this.max = job.max
+            addLine(job.point)
+
+            // Add a small delay every 200 lines to allow the UI to update.
+            if (job.lineNumber % 200 === 1) {
+                await delay(0)
+            }
+        }
 
         // Finish last object
         if (this.combinedLines[currentObject]) {
