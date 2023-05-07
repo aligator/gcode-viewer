@@ -58,6 +58,15 @@ To only show specific parts of the model you can use this:
 
 For both see the documentation in the code/comments.
 
+To get information about the start and end of specific layers, you can use:  
+`renderer.getLayerDefinition(layerIndex)`
+
+Or to get all layer definitions at once:  
+`renderer.getLayerDefinitions()`  
+`renderer.getLayerDefinitionsNoCopy()` (use only if you know what you are doing)
+
+Note: The layer definitions are only available after the first render.
+
 ### Line resolution
 To save some Memory and speedup the rendering a bit, you can reduce
 the amount of planes per segment used:

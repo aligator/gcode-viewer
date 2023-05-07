@@ -11,7 +11,7 @@ import {
     MeshPhongMaterial,
 } from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
-import { GCodeParser } from './parser'
+import { GCodeParser, LayerDefinition } from './parser'
 import { SegmentColorizer } from './SegmentColorizer'
 
 /**
@@ -295,6 +295,36 @@ export class GCodeRenderer {
      */
     public layerCount(): number {
         return this.parser.layerCount()
+    }
+
+    /**
+     * Get an array containing the start and end-point of each layer.
+     */    
+    public getLayerDefinitions(): LayerDefinition[] {
+        return this.parser.layerDefinition.map(definition => ({...definition}))
+    }
+
+    /**
+     * Get an array containing the start and end-point of each layer.
+     * Same as getLayerDefinitions, but faster, as no deep copy is created.  
+     * Prefer getLayerDefinition over this method.
+     * 
+     * Should only be used if getLayerDefinition is to slow and you know what you are doing!
+     * 
+     * IMPORTANT: The returned array or it's items must not be modified! It is used internally.
+     */    
+    public getLayerDefinitionsNoCopy(): LayerDefinition[] {
+        return this.parser.layerDefinition
+    }
+
+    /**
+     * Get the definition of a specific layer.
+     */
+    public getLayerDefinition(layer: number): LayerDefinition | undefined {
+        if (this.parser.layerDefinition[layer] === undefined) {
+            return undefined
+        }
+        return {...this.parser.layerDefinition[layer]}
     }
 
     /**
