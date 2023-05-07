@@ -68,6 +68,10 @@ function calcMinMax(min: Vector3 | undefined, max: Vector3 | undefined, newPoint
     return result
 }
 
+export interface LayerDefinition {
+    start: number, 
+    end: number,
+}
 
 /**
  * GCode renderer which parses a GCode file and displays it using
@@ -86,10 +90,16 @@ export class GCodeParser {
     private minSpeed: number | undefined = undefined
     private maxSpeed = 0
 
-    private layerIndex: {start: number, end: number}[] = []
-
+    
     // Public configurations:
 
+    /**
+     * Contains the start and end-point of each layer.  
+     * IMPORTANT: Do NOT MODIFY this array or it's , as it is used internally!
+     * It is only meant to be read.
+     */
+    public layerDefinition: LayerDefinition[] = []
+    
     /**
      * Width of travel-lines. Use 0 to hide them.
      *
@@ -437,9 +447,9 @@ export class GCodeParser {
 
 
         // Sort the layers by starting line number.
-        this.layerIndex = Array.from(layerPointsCache.values()).sort((v1, v2) => v1.start - v2.start)
+        this.layerDefinition = Array.from(layerPointsCache.values()).sort((v1, v2) => v1.start - v2.start)
         // Set the end of the last layer correctly.
-        this.layerIndex[this.layerIndex.length-1].end = this.pointsCount()-1
+        this.layerDefinition[this.layerDefinition.length-1].end = this.pointsCount()-1
     }
 
     /**
@@ -505,7 +515,7 @@ export class GCodeParser {
      * @param {number} end the ending layer (excluding)
      */
     public sliceLayer(start?: number, end?: number) {
-        this.slice(start && this.layerIndex[start]?.start, end && this.layerIndex[end]?.end+1)
+        this.slice(start && this.layerDefinition[start]?.start, end && this.layerDefinition[end]?.end+1)
     }
 
     /**
@@ -542,7 +552,7 @@ export class GCodeParser {
      */
     public layerCount(): number {
         // the last layer contains only the start-point, not an end point. -> -1
-        return this.layerIndex.length - 1 || 0
+        return this.layerDefinition.length - 1 || 0
     }
 
     /**
