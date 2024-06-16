@@ -27,6 +27,8 @@ You are welcome to help.
 [Take a look at this example.](example/index.html)  
 [Or the extended example with some controls](example/extended.html)
 [Also take a look here.](https://github.com/aligator/dev/blob/main/src/windows/gCodeViewer.tsx)
+
+### Used by others  
 [3D Printer callibration tool using the gcode-viewer](https://ellis3dp.com/Pressure_Linear_Advance_Tool/)
 
 ### Setup
