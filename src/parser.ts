@@ -15,10 +15,10 @@ function getLength(lastPoint: Vector3, newPoint: Vector3) {
  * The first char has to be a letter.
  * If value is not set (undefined | "") or if the resulting number is NaN,
  * the default value is returned.
- * 
+ *
  * If the defaultValue is a number, the result can never be undefined due to type constraints.
- * 
- * @param value 
+ *
+ * @param value
  * @param defaultValue {number | undefined} may be any number or undefined.
  * @returns if the defaultValue is undefined, this can be undefined. Else it will always be a number.
  */
@@ -37,7 +37,7 @@ function parseValue<DefaultType extends number | undefined>(value: string | unde
  */
 function calcMinMax(min: Vector3 | undefined, max: Vector3 | undefined, newPoint: Vector3): { min?: Vector3, max?: Vector3 } {
     const result = { min, max }
-    
+
     if (result.min === undefined) {
         result.min = newPoint.clone()
     }
@@ -69,7 +69,7 @@ function calcMinMax(min: Vector3 | undefined, max: Vector3 | undefined, newPoint
 }
 
 export interface LayerDefinition {
-    start: number, 
+    start: number,
     end: number,
 }
 
@@ -90,16 +90,16 @@ export class GCodeParser {
     private minSpeed: number | undefined = undefined
     private maxSpeed = 0
 
-    
+
     // Public configurations:
 
     /**
-     * Contains the start and end-point of each layer.  
+     * Contains the start and end-point of each layer.
      * IMPORTANT: Do NOT MODIFY this array or it's , as it is used internally!
      * It is only meant to be read.
      */
     public layerDefinition: LayerDefinition[] = []
-    
+
     /**
      * Width of travel-lines. Use 0 to hide them.
      *
@@ -231,103 +231,100 @@ export class GCodeParser {
         }
 
         // Save some values
-        let lastLastPoint: Vector3 = new Vector3(0, 0, 0)
-        let lastPoint: Vector3 = new Vector3(0, 0, 0)
-        let lastE = 0
-        let lastF = 0
-        let hotendTemp = 0
+        let lastPoint: Vector3 = new Vector3(0, 0, 0);
+        let lastE = 0;
+        let lastF = 0;
+        let hotendTemp = 0;
 
-        // Retrieves a value taking into account possible relative values.
         const getValue = (cmd: string[], name: string, last: number, relative: boolean): number => {
-            let val = parseValue(cmd.find((v) => v[0] === name), undefined)
-
-            if (val !== undefined) {
-                if (relative) {
-                    val += last
-                }
-            } else {
-                val = last
+            let val = parseValue(cmd.find((v) => v[0] === name), undefined);
+            if (val !== undefined && relative) {
+                val += last;
+            } else if (val === undefined) {
+                val = last;
             }
 
             if (Number.isNaN(val)) {
-                throw new Error(`could not read the value in cmd '${cmd}'`)
+                throw new Error(`could not read the value in cmd '${cmd}'`);
             }
+            return val;
+        };
 
-            return val
-        }
+        let lines: (string | undefined)[] = this.gCode.split("\n");
+        this.gCode = ""; // clear memory
 
-        let lines: (string | undefined)[] = this.gCode.split("\n")
-        this.gCode = "" // clear memory
-
-        let currentObject = 0
-        let lastAddedLinePoint: LinePoint | undefined = undefined
-        let pointCount = 0
+        let currentObject = 0;
+        let lastAddedLinePoint: LinePoint | undefined = undefined;
+        let pointCount = 0;
         const addLine = (newLine: LinePoint) => {
-            if (pointCount > 0 && pointCount % this.pointsPerObject == 0) {
-                // end the old geometry and increase the counter
-                this.combinedLines[currentObject].finish()
-                currentObject++
+            if (pointCount > 0 && pointCount % this.pointsPerObject === 0) {
+                this.combinedLines[currentObject].finish();
+                currentObject++;
             }
 
             if (this.combinedLines[currentObject] === undefined) {
-                this.combinedLines[currentObject] = new LineTubeGeometry(this.radialSegments)
+                this.combinedLines[currentObject] = new LineTubeGeometry(this.radialSegments);
                 if (lastAddedLinePoint) {
-                    this.combinedLines[currentObject].add(lastAddedLinePoint)
+                    this.combinedLines[currentObject].add(lastAddedLinePoint);
                 }
             }
+            this.combinedLines[currentObject].add(newLine);
+            lastAddedLinePoint = newLine;
+            pointCount++;
+        };
 
-            this.combinedLines[currentObject].add(newLine)
-            lastAddedLinePoint = newLine
-            pointCount++
-        }
+        function* lineGenerator(travelWidth: number, colorizer: SegmentColorizer): Generator<{ point: LinePoint, min?: Vector3, max?: Vector3, lineNumber: number }> {
+            let min: Vector3 | undefined;
+            let max: Vector3 | undefined;
+            let currentLayerIndex: number | undefined;
 
-        function* lineGenerator(travelWidth: number, colorizer: SegmentColorizer): Generator<{point: LinePoint, min?: Vector3, max?: Vector3, lineNumber: number}> {
-            let min: Vector3 | undefined
-            let max: Vector3 | undefined
-
-            // Create the geometry.
-            //this.combinedLines[oNr] = new LineTubeGeometry(this.radialSegments)
             for (let lineNumber = 0; lineNumber < lines.length; lineNumber++) {
-                let line = lines[lineNumber]
+                let line = lines[lineNumber];
 
                 if (line === undefined) {
-                    return
+                    return;
                 }
 
-                // Split off comments.
-                line = line.split(";", 2)[0]
+                if (line.includes(";LAYER:")) {
+                    let layerIndex = parseInt(line.split(":")[1]);
+                    if (!Number.isNaN(layerIndex)) {
+                        if (currentLayerIndex !== undefined) {
+                            let layerCache = layerPointsCache.get(currentLayerIndex);
+                            if (layerCache) {
+                                layerCache.end = pointCount - 1;
+                            }
+                        }
+                        currentLayerIndex = layerIndex;
+                        layerPointsCache.set(layerIndex, { start: pointCount, end: 0 });
+                    }
+                    continue;
+                }
 
-                const cmd = line.split(" ")
-                // A move command.
+                line = line.split(";", 2)[0]; // split comments
+                const cmd = line.split(" ");
                 if (cmd[0] === "G0" || cmd[0] === "G1") {
-                    const x = getValue(cmd,"X", lastPoint.x, relative.x)
-                    const y = getValue(cmd,"Y", lastPoint.y, relative.y)
-                    const z = getValue(cmd,"Z", lastPoint.z, relative.z)
-                    const e = getValue(cmd,"E", lastE, relative.e)
-                    const f = parseValue(cmd.find((v) => v[0] === "F"), lastF)
+                    const x = getValue(cmd, "X", lastPoint.x, relative.x);
+                    const y = getValue(cmd, "Y", lastPoint.y, relative.y);
+                    const z = getValue(cmd, "Z", lastPoint.z, relative.z);
+                    const e = getValue(cmd, "E", lastE, relative.e);
+                    const f = parseValue(cmd.find((v) => v[0] === "F"), lastF);
 
-                    const newPoint = new Vector3(x, y, z)
-
-                    const length = getLength(lastPoint, newPoint)
+                    const newPoint = new Vector3(x, y, z);
+                    const length = getLength(lastPoint, newPoint);
 
                     if (length !== 0) {
-                        let radius = (e - lastE) / length * 10
-                        
-                        // Hide negative extrusions as only move-extrusions
+                        let radius = (e - lastE) / length * 10;
                         if (radius < 0) {
-                            radius = 0
+                            radius = 0;
                         }
-
-                        if (radius == 0) {
-                            radius = travelWidth
+                        if (radius === 0) {
+                            radius = travelWidth;
                         } else {
-                            // Update the bounding box.
-                            const { min: newMin, max: newMax } = calcMinMax(min, max, newPoint)
-                            min = newMin
-                            max = newMax
+                            const { min: newMin, max: newMax } = calcMinMax(min, max, newPoint);
+                            min = newMin;
+                            max = newMax;
                         }
 
-                        // Get the color for this line.
                         const color = colorizer.getColor({
                             radius,
                             segmentStart: lastPoint,
@@ -337,121 +334,63 @@ export class GCodeParser {
                             gCodeLine: lineNumber,
                         });
 
-                        // Insert the last point with the current radius.
-                        // As the GCode contains the extrusion for the 'current' line,
-                        // but the LinePoint contains the radius for the 'next' line
-                        // we need to combine the last point with the current radius.
-                        yield {min, max, point: new LinePoint(lastPoint.clone(), radius, color), lineNumber}
-
-                        // Try to figure out the layer start and end points.
-                        if (lastPoint.z !== newPoint.z) {
-                            let last = layerPointsCache.get(lastPoint.z)
-                            let current = layerPointsCache.get(newPoint.z)
-
-                            if (last === undefined) {
-                                last = {
-                                    end: 0,
-                                    start: 0
-                                }
-                            }
-
-                            if (current === undefined) {
-                                current = {
-                                    end: 0,
-                                    start: 0
-                                }
-                            }
-
-                            last.end = pointCount-1
-                            current.start = pointCount
-
-                            layerPointsCache.set(lastPoint.z, last)
-                            layerPointsCache.set(newPoint.z, current)
-                        }
+                        yield { min, max, point: new LinePoint(lastPoint.clone(), radius, color), lineNumber };
                     }
 
-                    // Save the data.
-                    lastLastPoint.copy(lastPoint)
-                    lastPoint.copy(newPoint)
-                    lastE = e
-                    lastF = f
-
-                // Set a value directly.
+                    lastPoint.copy(newPoint);
+                    lastE = e;
+                    lastF = f;
                 } else if (cmd[0] === "G92") {
-                    // set state
-                    lastLastPoint.copy(lastPoint)
                     lastPoint = new Vector3(
                         parseValue(cmd.find((v) => v[0] === "X"), lastPoint.x),
                         parseValue(cmd.find((v) => v[0] === "Y"), lastPoint.y),
                         parseValue(cmd.find((v) => v[0] === "Z"), lastPoint.z),
-                    )
-                    lastE = parseValue(cmd.find((v) => v[0] === "E"), lastE)
-
-                // Hot end temperature.
+                    );
+                    lastE = parseValue(cmd.find((v) => v[0] === "E"), lastE);
                 } else if (cmd[0] === "M104" || cmd[0] === "M109") {
-                    // M104 S205 ; start heating hot end
-                    // M109 S205 ; wait for hot end temperature
-                    hotendTemp = parseValue(cmd.find((v) => v[0] === "S"), 0)
-            
-                // Absolute axes
+                    hotendTemp = parseValue(cmd.find((v) => v[0] === "S"), 0);
                 } else if (cmd[0] === "G90") {
-                    relative.x = false
-                    relative.y = false
-                    relative.z = false
-                    relative.e = false
-
-                // Relative axes
+                    relative.x = false;
+                    relative.y = false;
+                    relative.z = false;
+                    relative.e = false;
                 } else if (cmd[0] === "G91") {
-                    relative.x = true
-                    relative.y = true
-                    relative.z = true
-                    relative.e = true
-
-                // Absolute extrusion
+                    relative.x = true;
+                    relative.y = true;
+                    relative.z = true;
+                    relative.e = true;
                 } else if (cmd[0] === "M82") {
-                    relative.e = false
-
-                // Relative extrusion
+                    relative.e = false;
                 } else if (cmd[0] === "M83") {
-                    relative.e = true
-
-                // Inch values
+                    relative.e = true;
                 } else if (cmd[0] === "G20") {
-                    // TODO: inch values
-                    throw new Error("inch values not implemented yet")
+                    throw new Error("inch values not implemented yet");
                 }
 
-                lines[lineNumber] = undefined
+                lines[lineNumber] = undefined;
             }
         }
-        
 
-        let gen = lineGenerator(this.travelWidth, this.colorizer)
+        let gen = lineGenerator(this.travelWidth, this.colorizer);
         const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-        
-        for (let job of gen) {
-            this.min = job.min
-            this.max = job.max
-            addLine(job.point)
 
-            // Add a small delay every 200 lines to allow the UI to update.
+        for (let job of gen) {
+            this.min = job.min;
+            this.max = job.max;
+            addLine(job.point);
+
             if (job.lineNumber % 200 === 1) {
-                await delay(0)
+                await delay(0);
             }
         }
 
-        // Finish last object
         if (this.combinedLines[currentObject]) {
-            this.combinedLines[currentObject].finish()
+            this.combinedLines[currentObject].finish();
         }
 
-
-        // Sort the layers by starting line number.
-        this.layerDefinition = Array.from(layerPointsCache.values()).sort((v1, v2) => v1.start - v2.start)
-        // Set the end of the last layer correctly.
-        this.layerDefinition[this.layerDefinition.length-1].end = this.pointsCount()-1
+        this.layerDefinition = Array.from(layerPointsCache.values()).sort((v1, v2) => v1.start - v2.start);
+        this.layerDefinition[this.layerDefinition.length - 1].end = this.pointsCount() - 1;
     }
-
     /**
      * Slices the rendered model based on the passed start and end point numbers.
      * (0, pointsCount()) renders everything
