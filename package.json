@@ -17,7 +17,8 @@
     "build": "NODE_ENV=production && yarn clean && tsc && tsc -m es6 --outDir dist-esm && webpack",
     "build:dev": "yarn clean && tsc && tsc -m es6 --outDir dist-esm && webpack",
     "prepublish": "yarn build && yarn test",
-    "test": "jest"
+    "test": "jest",
+    "format": "prettier -w \"**/*.{js,ts,css,scss,md}\""
   },
   "dependencies": {
     "three": "^0.151.3"
@@ -27,6 +28,7 @@
     "@types/three": "^0.150.1",
     "jest": "^29.5.0",
     "jest-environment-jsdom": "^29.5.0",
+    "prettier": "^3.4.1",
     "ts-jest": "^29.1.0",
     "ts-loader": "^9.4.2",
     "typescript": "^5.0.4",
