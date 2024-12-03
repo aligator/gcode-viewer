@@ -242,6 +242,7 @@ export class GCodeParser {
     let lastF = 0;
     let hotendTemp = 0;
 
+    // Retrieves a value taking into account possible relative values.
     const getValue = (
       cmd: string[],
       name: string,
