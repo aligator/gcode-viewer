@@ -357,15 +357,17 @@ export class GCodeParser {
           const length = getLength(lastPoint, newPoint);
 
           if (length !== 0) {
-            let radius = ((e - lastE) / length) * 10;
+            let radiusSquared = ((e - lastE) / length);
 
+            let radius = 0;
             // Hide negative extrusions as only move-extrusions
-            if (radius < 0) {
+            if (radiusSquared < 0) {
               radius = 0;
             }
-            if (radius === 0) {
+            if (radiusSquared === 0) {
               radius = travelWidth;
             } else {
+              radius = Math.sqrt(radiusSquared);
               // Update the bounding box.
               const { min: newMin, max: newMax } = calcMinMax(
                 min,
