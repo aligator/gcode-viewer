@@ -234,26 +234,14 @@ export class GCodeParser {
       new Map();
 
     // Remember which values are in relative-mode.
-    const relative: {
-      x: boolean;
-      y: boolean;
-      z: boolean;
-      e: boolean;
-    } = {
-      x: false,
-      y: false,
-      z: false,
-      e: false,
-    };
+    const relative = { x: false, y: false, z: false, e: false };
 
     // Save some values
-    let lastLastPoint: Vector3 = new Vector3(0, 0, 0);
     let lastPoint: Vector3 = new Vector3(0, 0, 0);
     let lastE = 0;
     let lastF = 0;
     let hotendTemp = 0;
 
-    // Retrieves a value taking into account possible relative values.
     const getValue = (
       cmd: string[],
       name: string,
@@ -264,19 +252,15 @@ export class GCodeParser {
         cmd.find((v) => v[0] === name),
         undefined,
       );
-
-      if (val !== undefined) {
-        if (relative) {
-          val += last;
-        }
-      } else {
+      if (val !== undefined && relative) {
+        val += last;
+      } else if (val === undefined) {
         val = last;
       }
 
       if (Number.isNaN(val)) {
         throw new Error(`could not read the value in cmd '${cmd}'`);
       }
-
       return val;
     };
 
@@ -287,7 +271,7 @@ export class GCodeParser {
     let lastAddedLinePoint: LinePoint | undefined = undefined;
     let pointCount = 0;
     const addLine = (newLine: LinePoint) => {
-      if (pointCount > 0 && pointCount % this.pointsPerObject == 0) {
+      if (pointCount > 0 && pointCount % this.pointsPerObject === 0) {
         // end the old geometry and increase the counter
         this.combinedLines[currentObject].finish();
         currentObject++;
@@ -301,7 +285,6 @@ export class GCodeParser {
           this.combinedLines[currentObject].add(lastAddedLinePoint);
         }
       }
-
       this.combinedLines[currentObject].add(newLine);
       lastAddedLinePoint = newLine;
       pointCount++;
@@ -318,6 +301,7 @@ export class GCodeParser {
     }> {
       let min: Vector3 | undefined;
       let max: Vector3 | undefined;
+      let currentLayerIndex: number | undefined;
 
       // Create the geometry.
       //this.combinedLines[oNr] = new LineTubeGeometry(this.radialSegments)
@@ -328,9 +312,22 @@ export class GCodeParser {
           return;
         }
 
-        // Split off comments.
-        line = line.split(";", 2)[0];
+        if (line.includes(";LAYER:")) {
+          let layerIndex = parseInt(line.split(":")[1]);
+          if (!Number.isNaN(layerIndex)) {
+            if (currentLayerIndex !== undefined) {
+              let layerCache = layerPointsCache.get(currentLayerIndex);
+              if (layerCache) {
+                layerCache.end = pointCount - 1;
+              }
+            }
+            currentLayerIndex = layerIndex;
+            layerPointsCache.set(layerIndex, { start: pointCount, end: 0 });
+          }
+          continue;
+        }
 
+        line = line.split(";", 2)[0]; // split comments
         const cmd = line.split(" ");
         // A move command.
         if (cmd[0] === "G0" || cmd[0] === "G1") {
@@ -344,7 +341,6 @@ export class GCodeParser {
           );
 
           const newPoint = new Vector3(x, y, z);
-
           const length = getLength(lastPoint, newPoint);
 
           if (length !== 0) {
@@ -354,8 +350,7 @@ export class GCodeParser {
             if (radius < 0) {
               radius = 0;
             }
-
-            if (radius == 0) {
+            if (radius === 0) {
               radius = travelWidth;
             } else {
               // Update the bounding box.
@@ -388,44 +383,14 @@ export class GCodeParser {
               point: new LinePoint(lastPoint.clone(), radius, color),
               lineNumber,
             };
-
-            // Try to figure out the layer start and end points.
-            if (lastPoint.z !== newPoint.z) {
-              let last = layerPointsCache.get(lastPoint.z);
-              let current = layerPointsCache.get(newPoint.z);
-
-              if (last === undefined) {
-                last = {
-                  end: 0,
-                  start: 0,
-                };
-              }
-
-              if (current === undefined) {
-                current = {
-                  end: 0,
-                  start: 0,
-                };
-              }
-
-              last.end = pointCount - 1;
-              current.start = pointCount;
-
-              layerPointsCache.set(lastPoint.z, last);
-              layerPointsCache.set(newPoint.z, current);
-            }
           }
 
-          // Save the data.
-          lastLastPoint.copy(lastPoint);
           lastPoint.copy(newPoint);
           lastE = e;
           lastF = f;
 
           // Set a value directly.
         } else if (cmd[0] === "G92") {
-          // set state
-          lastLastPoint.copy(lastPoint);
           lastPoint = new Vector3(
             parseValue(
               cmd.find((v) => v[0] === "X"),
@@ -444,41 +409,26 @@ export class GCodeParser {
             cmd.find((v) => v[0] === "E"),
             lastE,
           );
-
-          // Hot end temperature.
         } else if (cmd[0] === "M104" || cmd[0] === "M109") {
-          // M104 S205 ; start heating hot end
-          // M109 S205 ; wait for hot end temperature
           hotendTemp = parseValue(
             cmd.find((v) => v[0] === "S"),
             0,
           );
-
-          // Absolute axes
         } else if (cmd[0] === "G90") {
           relative.x = false;
           relative.y = false;
           relative.z = false;
           relative.e = false;
-
-          // Relative axes
         } else if (cmd[0] === "G91") {
           relative.x = true;
           relative.y = true;
           relative.z = true;
           relative.e = true;
-
-          // Absolute extrusion
         } else if (cmd[0] === "M82") {
           relative.e = false;
-
-          // Relative extrusion
         } else if (cmd[0] === "M83") {
           relative.e = true;
-
-          // Inch values
         } else if (cmd[0] === "G20") {
-          // TODO: inch values
           throw new Error("inch values not implemented yet");
         }
 
@@ -495,26 +445,21 @@ export class GCodeParser {
       this.max = job.max;
       addLine(job.point);
 
-      // Add a small delay every 200 lines to allow the UI to update.
       if (job.lineNumber % 200 === 1) {
         await delay(0);
       }
     }
 
-    // Finish last object
     if (this.combinedLines[currentObject]) {
       this.combinedLines[currentObject].finish();
     }
 
-    // Sort the layers by starting line number.
     this.layerDefinition = Array.from(layerPointsCache.values()).sort(
       (v1, v2) => v1.start - v2.start,
     );
-    // Set the end of the last layer correctly.
     this.layerDefinition[this.layerDefinition.length - 1].end =
       this.pointsCount() - 1;
   }
-
   /**
    * Slices the rendered model based on the passed start and end point numbers.
    * (0, pointsCount()) renders everything
