@@ -312,9 +312,10 @@ export class GCodeParser {
           return;
         }
 
-        if (line.includes(";LAYER:")) {
-          let layerIndex = parseInt(line.split(":")[1]);
-          if (!Number.isNaN(layerIndex)) {
+        if (line.startsWith(";")) {
+          const layerMatch = line.match(/^;LAYER:(-?\d+)/);
+          if (layerMatch) {
+            let layerIndex = parseInt(layerMatch[1], 10);
             if (currentLayerIndex !== undefined) {
               let layerCache = layerPointsCache.get(currentLayerIndex);
               if (layerCache) {
