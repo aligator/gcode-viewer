@@ -357,7 +357,7 @@ export class GCodeParser {
           const length = getLength(lastPoint, newPoint);
 
           if (length !== 0) {
-            let radiusSquared = ((e - lastE) / length);
+            const radiusSquared = ((e - lastE) / length);
 
             let radius = 0;
             // Hide negative extrusions as only move-extrusions
