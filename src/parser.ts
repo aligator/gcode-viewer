@@ -410,26 +410,41 @@ export class GCodeParser {
             cmd.find((v) => v[0] === "E"),
             lastE,
           );
+
+          // Hot end temperature.
         } else if (cmd[0] === "M104" || cmd[0] === "M109") {
+          // M104 S205 ; start heating hot end
+          // M109 S205 ; wait for hot end temperature
           hotendTemp = parseValue(
             cmd.find((v) => v[0] === "S"),
             0,
           );
+
+          // Absolute axes
         } else if (cmd[0] === "G90") {
           relative.x = false;
           relative.y = false;
           relative.z = false;
           relative.e = false;
+
+          // Relative axes
         } else if (cmd[0] === "G91") {
           relative.x = true;
           relative.y = true;
           relative.z = true;
           relative.e = true;
+
+          // Absolute extrusion
         } else if (cmd[0] === "M82") {
           relative.e = false;
+
+          // Relative extrusion
         } else if (cmd[0] === "M83") {
           relative.e = true;
+
+          // Inch values
         } else if (cmd[0] === "G20") {
+          // TODO: inch values
           throw new Error("inch values not implemented yet");
         }
 
@@ -446,18 +461,22 @@ export class GCodeParser {
       this.max = job.max;
       addLine(job.point);
 
+      // Add a small delay every 200 lines to allow the UI to update.
       if (job.lineNumber % 200 === 1) {
         await delay(0);
       }
     }
 
+    // Finish last object
     if (this.combinedLines[currentObject]) {
       this.combinedLines[currentObject].finish();
     }
 
+    // Sort the layers by starting line number.
     this.layerDefinition = Array.from(layerPointsCache.values()).sort(
       (v1, v2) => v1.start - v2.start,
     );
+    // Set the end of the last layer correctly.
     this.layerDefinition[this.layerDefinition.length - 1].end =
       this.pointsCount() - 1;
   }
