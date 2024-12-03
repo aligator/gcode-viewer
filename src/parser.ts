@@ -80,6 +80,11 @@ export interface LayerDefinition {
   end: number;
 }
 
+export enum LayerType{
+  VARIABLE_Z,
+  LAYER_COMMENTS,
+}
+
 /**
  * GCode renderer which parses a GCode file and displays it using
  * three.js. Use .element() to retrieve the DOM canvas element.
@@ -130,6 +135,8 @@ export class GCodeParser {
    * @type number
    */
   public radialSegments: number = 8;
+
+  public layerType: LayerType = LayerType.VARIABLE_Z;
 
   /**
    * Internally the rendered object is split into several. This allows to reduce the
@@ -237,6 +244,7 @@ export class GCodeParser {
     const relative = { x: false, y: false, z: false, e: false };
 
     // Save some values
+    let lastLastPoint: Vector3 = new Vector3(0, 0, 0);
     let lastPoint: Vector3 = new Vector3(0, 0, 0);
     let lastE = 0;
     let lastF = 0;
@@ -294,6 +302,7 @@ export class GCodeParser {
     function* lineGenerator(
       travelWidth: number,
       colorizer: SegmentColorizer,
+      layerType: LayerType,
     ): Generator<{
       point: LinePoint;
       min?: Vector3;
@@ -313,20 +322,22 @@ export class GCodeParser {
           return;
         }
 
-        if (line.startsWith(";")) {
-          const layerMatch = line.match(/^;LAYER:(-?\d+)/);
-          if (layerMatch) {
-            let layerIndex = parseInt(layerMatch[1], 10);
-            if (currentLayerIndex !== undefined) {
-              let layerCache = layerPointsCache.get(currentLayerIndex);
-              if (layerCache) {
-                layerCache.end = pointCount - 1;
+        if(layerType === LayerType.LAYER_COMMENTS){
+          if (line.startsWith(";")) {
+            const layerMatch = line.match(/^;LAYER:(-?\d+)/);
+            if (layerMatch) {
+              let layerIndex = parseInt(layerMatch[1], 10);
+              if (currentLayerIndex !== undefined) {
+                let layerCache = layerPointsCache.get(currentLayerIndex);
+                if (layerCache) {
+                  layerCache.end = pointCount - 1;
+                }
               }
+              currentLayerIndex = layerIndex;
+              layerPointsCache.set(layerIndex, { start: pointCount, end: 0 });
             }
-            currentLayerIndex = layerIndex;
-            layerPointsCache.set(layerIndex, { start: pointCount, end: 0 });
+            continue;
           }
-          continue;
         }
 
         line = line.split(";", 2)[0]; // split comments
@@ -385,14 +396,45 @@ export class GCodeParser {
               point: new LinePoint(lastPoint.clone(), radius, color),
               lineNumber,
             };
-          }
+            if(layerType == LayerType.VARIABLE_Z){
+              // Try to figure out the layer start and end points.
+              if (lastPoint.z !== newPoint.z) {
+                let last = layerPointsCache.get(lastPoint.z);
+                let current = layerPointsCache.get(newPoint.z);
 
+                if (last === undefined) {
+                  last = {
+                    end: 0,
+                    start: 0,
+                  };
+                }
+
+                if (current === undefined) {
+                  current = {
+                    end: 0,
+                    start: 0,
+                  };
+                }
+
+                last.end = pointCount - 1;
+                current.start = pointCount;
+
+                layerPointsCache.set(lastPoint.z, last);
+                layerPointsCache.set(newPoint.z, current);
+              }
+            }
+          }
+          //save the data
+
+          lastLastPoint.copy(lastPoint);
           lastPoint.copy(newPoint);
           lastE = e;
           lastF = f;
 
           // Set a value directly.
         } else if (cmd[0] === "G92") {
+          // set state
+          lastLastPoint.copy(lastPoint);
           lastPoint = new Vector3(
             parseValue(
               cmd.find((v) => v[0] === "X"),
@@ -453,7 +495,7 @@ export class GCodeParser {
       }
     }
 
-    let gen = lineGenerator(this.travelWidth, this.colorizer);
+    let gen = lineGenerator(this.travelWidth, this.colorizer, this.layerType);
     const delay = (ms: number) =>
       new Promise((resolve) => setTimeout(resolve, ms));
 
