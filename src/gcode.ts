@@ -11,7 +11,7 @@ import {
   MeshPhongMaterial,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
-import {GCodeParser, LayerDefinition, LayerType} from "./parser";
+import { GCodeParser, LayerDefinition, LayerType } from "./parser";
 import { SegmentColorizer } from "./SegmentColorizer";
 
 /**
@@ -75,16 +75,16 @@ export class GCodeRenderer {
    * Type to determine how the layer change is detected.
    */
   public get layerType(): LayerType {
-       return this.parser.layerType;
-   }
+    return this.parser.layerType;
+  }
 
   /**
    * Type to determine how the layer change is detected.
    * @param type : LayerType
    */
-   public set layerType(type: LayerType) {
-       this.parser.layerType = type;
-   }
+  public set layerType(type: LayerType) {
+    this.parser.layerType = type;
+  }
 
   /**
    * Set any colorizer implementation to change the segment color based on the segment

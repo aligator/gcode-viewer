@@ -80,7 +80,7 @@ export interface LayerDefinition {
   end: number;
 }
 
-export enum LayerType{
+export enum LayerType {
   /**
    * Layers are defined by the Z value of the points.
    * This may not be accurate, and may have problems if used with Z-Hops or similar things.
@@ -337,7 +337,7 @@ export class GCodeParser {
           return;
         }
 
-        if(layerType === LayerType.LAYER_COMMENTS){
+        if (layerType === LayerType.LAYER_COMMENTS) {
           if (line.startsWith(";")) {
             const layerMatch = line.match(/^;LAYER:(-?\d+)/);
             if (layerMatch) {
@@ -372,7 +372,7 @@ export class GCodeParser {
           const length = getLength(lastPoint, newPoint);
 
           if (length !== 0) {
-            const radiusSquared = ((e - lastE) / length);
+            const radiusSquared = (e - lastE) / length;
 
             let radius = 0;
             // Hide negative extrusions as only move-extrusions
@@ -413,7 +413,7 @@ export class GCodeParser {
               point: new LinePoint(lastPoint.clone(), radius, color),
               lineNumber,
             };
-            if(layerType == LayerType.VARIABLE_Z){
+            if (layerType == LayerType.VARIABLE_Z) {
               // Try to figure out the layer start and end points.
               if (lastPoint.z !== newPoint.z) {
                 let last = layerPointsCache.get(lastPoint.z);
@@ -606,8 +606,10 @@ export class GCodeParser {
    */
   public sliceLayer(start?: number, end?: number) {
     this.slice(
-      typeof start === 'number' ? this.layerDefinition[start]?.start : undefined,
-      typeof end === 'number' ? this.layerDefinition[end]?.end + 1 : undefined,
+      typeof start === "number"
+        ? this.layerDefinition[start]?.start
+        : undefined,
+      typeof end === "number" ? this.layerDefinition[end]?.end + 1 : undefined,
     );
   }
 
