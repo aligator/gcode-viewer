@@ -101,6 +101,15 @@ renderer.travelWidth = 0.1;
 
 The default is `0.01`. `0` is also possible to completely hide them.
 
+### Gcode LayerViews
+
+The default for sectioning the layers is determining the layers based on changing z-values on the gcode.
+However, If the user wants layers to be taken from the comments of the Gcode such as `;LAYER:1`. they can specify the lineType as:
+
+```js
+renderer.layerType = LayerType.LAYER_COMMENTS;
+```
+
 ### Access three.js
 
 Both, the scene and the whole three.js is exported, so you can use it.  

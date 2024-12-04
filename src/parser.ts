@@ -80,6 +80,21 @@ export interface LayerDefinition {
   end: number;
 }
 
+export enum LayerType{
+  /**
+   * Layers are defined by the Z value of the points.
+   * This may not be accurate, and may have problems if used with Z-Hops or similar things.
+   */
+  VARIABLE_Z,
+
+  /**
+   * Layer changes are defined by Layer comments in the GCode.
+   * This is more accurate but requires the GCode to have layer comments.
+   * ;LAYER:0
+   */
+  LAYER_COMMENTS,
+}
+
 /**
  * GCode renderer which parses a GCode file and displays it using
  * three.js. Use .element() to retrieve the DOM canvas element.
@@ -130,6 +145,13 @@ export class GCodeParser {
    * @type number
    */
   public radialSegments: number = 8;
+
+  /**
+   * The layer type to determine how the layer change is detected.
+   * @type LayerType
+   * @default LayerType.VARIABLE_Z
+   */
+  public layerType: LayerType = LayerType.VARIABLE_Z;
 
   /**
    * Internally the rendered object is split into several. This allows to reduce the
@@ -234,17 +256,7 @@ export class GCodeParser {
       new Map();
 
     // Remember which values are in relative-mode.
-    const relative: {
-      x: boolean;
-      y: boolean;
-      z: boolean;
-      e: boolean;
-    } = {
-      x: false,
-      y: false,
-      z: false,
-      e: false,
-    };
+    const relative = { x: false, y: false, z: false, e: false };
 
     // Save some values
     let lastLastPoint: Vector3 = new Vector3(0, 0, 0);
@@ -264,19 +276,15 @@ export class GCodeParser {
         cmd.find((v) => v[0] === name),
         undefined,
       );
-
-      if (val !== undefined) {
-        if (relative) {
-          val += last;
-        }
-      } else {
+      if (val !== undefined && relative) {
+        val += last;
+      } else if (val === undefined) {
         val = last;
       }
 
       if (Number.isNaN(val)) {
         throw new Error(`could not read the value in cmd '${cmd}'`);
       }
-
       return val;
     };
 
@@ -287,7 +295,7 @@ export class GCodeParser {
     let lastAddedLinePoint: LinePoint | undefined = undefined;
     let pointCount = 0;
     const addLine = (newLine: LinePoint) => {
-      if (pointCount > 0 && pointCount % this.pointsPerObject == 0) {
+      if (pointCount > 0 && pointCount % this.pointsPerObject === 0) {
         // end the old geometry and increase the counter
         this.combinedLines[currentObject].finish();
         currentObject++;
@@ -301,7 +309,6 @@ export class GCodeParser {
           this.combinedLines[currentObject].add(lastAddedLinePoint);
         }
       }
-
       this.combinedLines[currentObject].add(newLine);
       lastAddedLinePoint = newLine;
       pointCount++;
@@ -310,6 +317,7 @@ export class GCodeParser {
     function* lineGenerator(
       travelWidth: number,
       colorizer: SegmentColorizer,
+      layerType: LayerType,
     ): Generator<{
       point: LinePoint;
       min?: Vector3;
@@ -318,6 +326,7 @@ export class GCodeParser {
     }> {
       let min: Vector3 | undefined;
       let max: Vector3 | undefined;
+      let currentLayerIndex: number | undefined;
 
       // Create the geometry.
       //this.combinedLines[oNr] = new LineTubeGeometry(this.radialSegments)
@@ -328,9 +337,25 @@ export class GCodeParser {
           return;
         }
 
-        // Split off comments.
-        line = line.split(";", 2)[0];
+        if(layerType === LayerType.LAYER_COMMENTS){
+          if (line.startsWith(";")) {
+            const layerMatch = line.match(/^;LAYER:(-?\d+)/);
+            if (layerMatch) {
+              let layerIndex = parseInt(layerMatch[1], 10);
+              if (currentLayerIndex !== undefined) {
+                let layerCache = layerPointsCache.get(currentLayerIndex);
+                if (layerCache) {
+                  layerCache.end = pointCount - 1;
+                }
+              }
+              currentLayerIndex = layerIndex;
+              layerPointsCache.set(layerIndex, { start: pointCount, end: 0 });
+            }
+            continue;
+          }
+        }
 
+        line = line.split(";", 2)[0]; // split comments
         const cmd = line.split(" ");
         // A move command.
         if (cmd[0] === "G0" || cmd[0] === "G1") {
@@ -344,11 +369,10 @@ export class GCodeParser {
           );
 
           const newPoint = new Vector3(x, y, z);
-
           const length = getLength(lastPoint, newPoint);
 
           if (length !== 0) {
-            let radiusSquared = ((e - lastE) / length);
+            const radiusSquared = ((e - lastE) / length);
 
             let radius = 0;
             // Hide negative extrusions as only move-extrusions
@@ -389,35 +413,36 @@ export class GCodeParser {
               point: new LinePoint(lastPoint.clone(), radius, color),
               lineNumber,
             };
+            if(layerType == LayerType.VARIABLE_Z){
+              // Try to figure out the layer start and end points.
+              if (lastPoint.z !== newPoint.z) {
+                let last = layerPointsCache.get(lastPoint.z);
+                let current = layerPointsCache.get(newPoint.z);
 
-            // Try to figure out the layer start and end points.
-            if (lastPoint.z !== newPoint.z) {
-              let last = layerPointsCache.get(lastPoint.z);
-              let current = layerPointsCache.get(newPoint.z);
+                if (last === undefined) {
+                  last = {
+                    end: 0,
+                    start: 0,
+                  };
+                }
 
-              if (last === undefined) {
-                last = {
-                  end: 0,
-                  start: 0,
-                };
+                if (current === undefined) {
+                  current = {
+                    end: 0,
+                    start: 0,
+                  };
+                }
+
+                last.end = pointCount - 1;
+                current.start = pointCount;
+
+                layerPointsCache.set(lastPoint.z, last);
+                layerPointsCache.set(newPoint.z, current);
               }
-
-              if (current === undefined) {
-                current = {
-                  end: 0,
-                  start: 0,
-                };
-              }
-
-              last.end = pointCount - 1;
-              current.start = pointCount;
-
-              layerPointsCache.set(lastPoint.z, last);
-              layerPointsCache.set(newPoint.z, current);
             }
           }
+          //save the data
 
-          // Save the data.
           lastLastPoint.copy(lastPoint);
           lastPoint.copy(newPoint);
           lastE = e;
@@ -487,7 +512,7 @@ export class GCodeParser {
       }
     }
 
-    let gen = lineGenerator(this.travelWidth, this.colorizer);
+    let gen = lineGenerator(this.travelWidth, this.colorizer, this.layerType);
     const delay = (ms: number) =>
       new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -515,7 +540,6 @@ export class GCodeParser {
     this.layerDefinition[this.layerDefinition.length - 1].end =
       this.pointsCount() - 1;
   }
-
   /**
    * Slices the rendered model based on the passed start and end point numbers.
    * (0, pointsCount()) renders everything
