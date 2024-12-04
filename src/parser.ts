@@ -81,7 +81,17 @@ export interface LayerDefinition {
 }
 
 export enum LayerType{
+  /**
+   * Layers are defined by the Z value of the points.
+   * This may not be accurate, and may have problems if used with Z-Hops or similar things.
+   */
   VARIABLE_Z,
+
+  /**
+   * Layer changes are defined by Layer comments in the GCode.
+   * This is more accurate but requires the GCode to have layer comments.
+   * ;LAYER:0
+   */
   LAYER_COMMENTS,
 }
 
@@ -136,6 +146,11 @@ export class GCodeParser {
    */
   public radialSegments: number = 8;
 
+  /**
+   * The layer type to determine how the layer change is detected.
+   * @type LayerType
+   * @default LayerType.VARIABLE_Z
+   */
   public layerType: LayerType = LayerType.VARIABLE_Z;
 
   /**

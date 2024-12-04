@@ -72,14 +72,14 @@ export class GCodeRenderer {
   }
 
   /**
-   * Type to determine how the layers are sliced
+   * Type to determine how the layer change is detected.
    */
   public get layerType(): LayerType {
        return this.parser.layerType;
    }
 
   /**
-   * Type to determine how the layers are sliced
+   * Type to determine how the layer change is detected.
    * @param type : LayerType
    */
    public set layerType(type: LayerType) {
