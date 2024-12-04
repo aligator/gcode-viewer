@@ -581,8 +581,8 @@ export class GCodeParser {
    */
   public sliceLayer(start?: number, end?: number) {
     this.slice(
-      start && this.layerDefinition[start]?.start,
-      end && this.layerDefinition[end]?.end + 1,
+      typeof start === 'number' ? this.layerDefinition[start]?.start : undefined,
+      typeof end === 'number' ? this.layerDefinition[end]?.end + 1 : undefined,
     );
   }
 
