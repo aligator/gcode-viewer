@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "repository": "https://github.com/aligator/gcode-viewer",
-  "author": "aligator <aligator@suncraft-server.de>",
+  "author": "aligator <me@aligator.dev>",
   "license": "MIT",
   "files": [
     "dist/**/*",
@@ -16,7 +16,9 @@
     "clean": "rm -rf _bundles dist dist-esm",
     "build": "NODE_ENV=production && yarn clean && tsc && tsc -m es6 --outDir dist-esm && webpack",
     "build:dev": "yarn clean && tsc && tsc -m es6 --outDir dist-esm && webpack",
-    "prepublish": "yarn build && yarn test",
+    "prepublish": "yarn format && yarn build && yarn test",
+    "postpublish": "sed -i \"s|https://unpkg.com/gcode-viewer@[0-9]*\\.[0-9]*\\.[0-9]*|https://unpkg.com/gcode-viewer@$(jq -r .version package.json)|g\" example/*.html",
+    "release": "release-it",
     "test": "jest",
     "format": "prettier -w \"**/*.{js,ts,css,scss,md}\""
   },
@@ -29,6 +31,7 @@
     "jest": "^29.5.0",
     "jest-environment-jsdom": "^29.5.0",
     "prettier": "^3.4.1",
+    "release-it": "^17.10.0",
     "ts-jest": "^29.1.0",
     "ts-loader": "^9.4.2",
     "typescript": "^5.0.4",
