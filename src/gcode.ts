@@ -9,6 +9,7 @@ import {
   AmbientLight,
   SpotLight,
   MeshPhongMaterial,
+  Vector2,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import { GCodeParser, LayerDefinition, LayerType } from "./parser";
@@ -71,6 +72,25 @@ export class GCodeRenderer {
     this.parser.travelWidth = w;
   }
 
+
+  /**
+   * Nozzle offsets for multi-extrusion.
+   * 
+   * @type Vector2[]
+   */
+  public get nozzleOffsets(): Vector2[] {
+    return this.parser.nozzleOffsets;
+  }
+
+  /**
+   * Nozzle offsets for multi-extrusion.
+   * 
+   * @type Vector2[]
+   */
+  public set nozzleOffsets(nozzleOffsets: Vector2[]) {
+    this.parser.nozzleOffsets = nozzleOffsets;
+  }
+  
   /**
    * Type to determine how the layer change is detected.
    */
