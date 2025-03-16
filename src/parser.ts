@@ -1,4 +1,4 @@
-import { Vector3 } from "three";
+import { Vector2, Vector3 } from "three";
 import { LineTubeGeometry } from "./LineTubeGeometry";
 import { LinePoint } from "./LinePoint";
 import { SegmentColorizer, SimpleColorizer } from "./SegmentColorizer";
@@ -165,6 +165,13 @@ export class GCodeParser {
   public pointsPerObject: number = 120000;
 
   /**
+   * The nozzle offsets for multi-extrusion printers.
+   * 
+   * @type Vector2[]
+   */
+  public nozzleOffsets: Vector2[] = [];
+
+  /**
    * Creates a new GCode renderer for the given gcode.
    * It initializes the canvas to the given size and
    * uses the passed color as background.
@@ -314,6 +321,11 @@ export class GCodeParser {
       pointCount++;
     };
 
+    const getCurrentNozzleOffset = (currentExtruder: number): Vector3 => {
+      const offset = this.nozzleOffsets[currentExtruder] ?? new Vector2(0, 0);
+      return new Vector3(offset.x, offset.y, 0);
+    };
+
     function* lineGenerator(
       travelWidth: number,
       colorizer: SegmentColorizer,
@@ -327,6 +339,7 @@ export class GCodeParser {
       let min: Vector3 | undefined;
       let max: Vector3 | undefined;
       let currentLayerIndex: number | undefined;
+      let currentExtruder = 0;
 
       // Create the geometry.
       //this.combinedLines[oNr] = new LineTubeGeometry(this.radialSegments)
@@ -410,7 +423,7 @@ export class GCodeParser {
             yield {
               min,
               max,
-              point: new LinePoint(lastPoint.clone(), radius, color),
+              point: new LinePoint(lastPoint.clone().add(getCurrentNozzleOffset(currentExtruder)), radius, color),
               lineNumber,
             };
             if (layerType == LayerType.VARIABLE_Z) {
@@ -506,6 +519,9 @@ export class GCodeParser {
         } else if (cmd[0] === "G20") {
           // TODO: inch values
           throw new Error("inch values not implemented yet");
+        } else if (cmd[0].startsWith("T")) {
+          // Tool change
+          currentExtruder = parseInt(cmd[0].substring(1), 10);
         }
 
         lines[lineNumber] = undefined;

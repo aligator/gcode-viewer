@@ -110,6 +110,17 @@ However, If the user wants layers to be taken from the comments of the Gcode suc
 renderer.layerType = LayerType.LAYER_COMMENTS;
 ```
 
+### Configure nozzle offsets for dual extrusion
+
+If you have a dual extruder printer the gcode paths for the second extruder may be offset. To correctly render the paths you can set the nozzle offsets:
+
+```js
+renderer.nozzleOffsets = [
+  new gcodeViewer.Vector2(0, 0),
+  new gcodeViewer.Vector2(10, 10),
+]
+```
+
 ### Access three.js
 
 Both, the scene and the whole three.js is exported, so you can use it.  
