@@ -9,6 +9,13 @@ several browser-OS combination do not support line thickness rendering other tha
 
 ![gcode-viewer](gcode-viewer.png)
 
+## Known Problems - Guarantees
+- As long as it's pre v1.0.0 I give no guarantees, however I still try to avoid breaking changes.
+- As this lib is built specifically for my own experimental [GoSlice](https://github.com/aligator/GoSlice), it does not support all features. However if nothing special is needed, it should work - No guarantees.
+- The lib currently "embeds" threejs.  
+You can access the embedded threejs by using `gcodeViewer.THREE`  
+It would be much better if it would use threejs as dependency as embedding may introduce incompatibilities when a separate threejs is used.
+
 ## Features
 
 - slicing the viewed lines either by layer or line by line
