@@ -1,89 +1,88 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>GCode Viewer</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <!-- to use your locally built version while development: -->
-    <!-- <script src="../_bundles/gcode-viewer.js"></script> -->
 
-    <!-- In production you should serve this on your own. -->
-    <script
-      src="https://unpkg.com/gcode-viewer@0.7.0/_bundles/gcode-viewer.js"
-    ></script>
-  </head>
+<head>
+  <title>GCode Viewer</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <!-- to use your locally built version while development: -->
+  <!-- <script src="../_bundles/gcode-viewer.js"></script> -->
 
-  <body>
-    <div id="gcode-viewer"></div>
+  <!-- In production you should serve this on your own. -->
+  <script src="https://unpkg.com/gcode-viewer@0.7.1/_bundles/gcode-viewer.js"></script>
+</head>
 
-    <script>
-      function render(gcode) {
-        // First parse the ;TYPE: comments to build an example config for the GCodeRenderer.
-        // Note that the example gcode does not indicate travel moves easily -> just ignore that fact for simplicity.
+<body>
+  <div id="gcode-viewer"></div>
 
-        const TRANSPARENT_COLOR = new gcodeViewer.Color();
+  <script>
+    function render(gcode) {
+      // First parse the ;TYPE: comments to build an example config for the GCodeRenderer.
+      // Note that the example gcode does not indicate travel moves easily -> just ignore that fact for simplicity.
 
-        const INNER_COLOR = new gcodeViewer.Color("#ff0000");
-        const OUTER_COLOR = new gcodeViewer.Color("#00ff00");
-        const SKIRT_COLOR = new gcodeViewer.Color("#ffff00");
-        const FILL_COLOR = new gcodeViewer.Color("#ffff00");
-        const BOTTOM_FILL_COLOR = new gcodeViewer.Color("#ffff00");
-        const INTERNAL_FILL = new gcodeViewer.Color("#00ffff");
-        const TOP_FILL = new gcodeViewer.Color("#ff00ff");
-        const DEFAULT_COLOR = new gcodeViewer.Color("#0000ff");
-        let colorConfig = [];
+      const TRANSPARENT_COLOR = new gcodeViewer.Color();
 
-        gcode.split("\n").forEach(function (line, i) {
-          let color;
-          if (line.startsWith(";TYPE:WALL-INNER")) {
-            color = INNER_COLOR;
-          } else if (line.startsWith(";TYPE:WALL-OUTER")) {
-            color = OUTER_COLOR;
-          } else if (line.startsWith(";TYPE:SKIRT")) {
-            color = SKIRT_COLOR;
-          } else if (line.startsWith(";TYPE:FILL")) {
-            color = FILL_COLOR;
-          } else if (line.startsWith(";TYPE:BOTTOM-FILL")) {
-            color = BOTTOM_FILL_COLOR;
-          } else if (line.startsWith(";TYPE:INTERNAL-FILL")) {
-            color = INTERNAL_FILL;
-          } else if (line.startsWith(";TYPE:TOP-FILL")) {
-            color = TOP_FILL;
-          }
+      const INNER_COLOR = new gcodeViewer.Color("#ff0000");
+      const OUTER_COLOR = new gcodeViewer.Color("#00ff00");
+      const SKIRT_COLOR = new gcodeViewer.Color("#ffff00");
+      const FILL_COLOR = new gcodeViewer.Color("#ffff00");
+      const BOTTOM_FILL_COLOR = new gcodeViewer.Color("#ffff00");
+      const INTERNAL_FILL = new gcodeViewer.Color("#00ffff");
+      const TOP_FILL = new gcodeViewer.Color("#ff00ff");
+      const DEFAULT_COLOR = new gcodeViewer.Color("#0000ff");
+      let colorConfig = [];
 
-          if (
-            colorConfig.length === 0 ||
-            color && colorConfig[colorConfig.length - 1].color !== color
-          ) {
-            colorConfig.push({ toLine: i, color });
-          } else {
-            colorConfig[colorConfig.length - 1].toLine = i;
-          }
-        });
+      gcode.split("\n").forEach(function (line, i) {
+        let color;
+        if (line.startsWith(";TYPE:WALL-INNER")) {
+          color = INNER_COLOR;
+        } else if (line.startsWith(";TYPE:WALL-OUTER")) {
+          color = OUTER_COLOR;
+        } else if (line.startsWith(";TYPE:SKIRT")) {
+          color = SKIRT_COLOR;
+        } else if (line.startsWith(";TYPE:FILL")) {
+          color = FILL_COLOR;
+        } else if (line.startsWith(";TYPE:BOTTOM-FILL")) {
+          color = BOTTOM_FILL_COLOR;
+        } else if (line.startsWith(";TYPE:INTERNAL-FILL")) {
+          color = INTERNAL_FILL;
+        } else if (line.startsWith(";TYPE:TOP-FILL")) {
+          color = TOP_FILL;
+        }
 
-        const renderer = new gcodeViewer.GCodeRenderer(
-          gcode,
-          800,
-          600,
-          new gcodeViewer.Color(0x808080),
-        );
+        if (
+          colorConfig.length === 0 ||
+          color && colorConfig[colorConfig.length - 1].color !== color
+        ) {
+          colorConfig.push({ toLine: i, color });
+        } else {
+          colorConfig[colorConfig.length - 1].toLine = i;
+        }
+      });
 
-        // This is an example using the Speed colorizer.
-        // Other options are:
-        // * SimpleColorizer (default) - sets all lines to the same color
-        // * SpeedColorizer - colorizes based on the speed / feed rate
-        // * TempColorizer - colorizes based on the temperature
-        renderer.colorizer = new gcodeViewer.LineColorizer(colorConfig);
+      const renderer = new gcodeViewer.GCodeRenderer(
+        gcode,
+        800,
+        600,
+        new gcodeViewer.Color(0x808080),
+      );
 
-        document.getElementById("gcode-viewer").append(
-          renderer.element(),
-        );
+      // This is an example using the Speed colorizer.
+      // Other options are:
+      // * SimpleColorizer (default) - sets all lines to the same color
+      // * SpeedColorizer - colorizes based on the speed / feed rate
+      // * TempColorizer - colorizes based on the temperature
+      renderer.colorizer = new gcodeViewer.LineColorizer(colorConfig);
 
-        renderer.render().then(() => console.log("rendering finished"));
-      }
+      document.getElementById("gcode-viewer").append(
+        renderer.element(),
+      );
 
-      render(`;LAYER:0
+      renderer.render().then(() => console.log("rendering finished"));
+    }
+
+    render(`;LAYER:0
 ;Generated with GoSlice
 ;______________________
 M107 ; disable fan
@@ -118418,6 +118417,7 @@ M140 S0 ; Set bed to 0C (off)
 G28 X0  ; home X axis to get head out of the way
 M84 ;steppers off
 `);
-    </script>
-  </body>
+  </script>
+</body>
+
 </html>

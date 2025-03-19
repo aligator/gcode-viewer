@@ -1,202 +1,191 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>GCode Viewer</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
 
-    <!-- to use your locally built version while development: -->
-    <script src="../_bundles/gcode-viewer.js"></script>
+<head>
+  <title>GCode Viewer</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
 
-    <!-- In production you should serve this on your own. -->
-    <!-- <script src="https://unpkg.com/gcode-viewer@0.7.0/_bundles/gcode-viewer.js"></script> -->
+  <!-- to use your locally built version while development: -->
+  <script src="../_bundles/gcode-viewer.js"></script>
 
-    <!-- Normalize css just for example purposes. In Production you should use a propper way https://necolas.github.io/normalize.css/ -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"
-      integrity="sha512-NhSC1YmyruXifcj/KFRWoC561YpHpc5Jtzgvbuzx5VozKpWvQ+4nXhPdFgmx8xqexRcpAglTj9sIBWINXa8x5w=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    />
-    <style type="text/css">
-      html,
-      body,
-      main {
-        width: 100%;
-        height: 100%;
-      }
+  <!-- In production you should serve this on your own. -->
+  <!-- <script src="https://unpkg.com/gcode-viewer@0.7.1/_bundles/gcode-viewer.js"></script> -->
 
-      main {
-        display: flex;
-        align-items: center;
-        flex-direction: column;
-      }
+  <!-- Normalize css just for example purposes. In Production you should use a propper way https://necolas.github.io/normalize.css/ -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css"
+    integrity="sha512-NhSC1YmyruXifcj/KFRWoC561YpHpc5Jtzgvbuzx5VozKpWvQ+4nXhPdFgmx8xqexRcpAglTj9sIBWINXa8x5w=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style type="text/css">
+    html,
+    body,
+    main {
+      width: 100%;
+      height: 100%;
+    }
 
-      .content {
-        width: fit-content;
-      }
+    main {
+      display: flex;
+      align-items: center;
+      flex-direction: column;
+    }
 
-      .toolbar-top {
-        display: flex;
-        gap: 1rem;
-        margin-bottom: 1rem;
-        margin-top: 1rem;
-        flex-wrap: wrap;
-      }
+    .content {
+      width: fit-content;
+    }
 
-      .toolbar-entity {
-        display: flex;
-        align-items: center;
-        flex-grow: 1;
-        flex-basis: 100%;
-        gap: 1rem;
-      }
+    .toolbar-top {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
 
-      .slider {
-        flex: 1;
-      }
+    .toolbar-entity {
+      display: flex;
+      align-items: center;
+      flex-grow: 1;
+      flex-basis: 100%;
+      gap: 1rem;
+    }
 
-      #gcode-viewer {
-        height: fit-content;
-        width: fit-content;
-      }
-    </style>
-  </head>
+    .slider {
+      flex: 1;
+    }
 
-  <body>
-    <script>
-      let gcode = ""; // set later, so that the big gcode-blob is at the end.
+    #gcode-viewer {
+      height: fit-content;
+      width: fit-content;
+    }
+  </style>
+</head>
 
-      let travelWidth = 0;
+<body>
+  <script>
+    let gcode = ""; // set later, so that the big gcode-blob is at the end.
 
-      async function render() {
-        // First parse the ;TYPE: comments to build an example config for the GCodeRenderer.
-        // Note that the example gcode does not indicate travel moves easily -> just ignore that fact for simplicity.
+    let travelWidth = 0;
 
-        const TRANSPARENT_COLOR = new gcodeViewer.Color();
+    async function render() {
+      // First parse the ;TYPE: comments to build an example config for the GCodeRenderer.
+      // Note that the example gcode does not indicate travel moves easily -> just ignore that fact for simplicity.
 
-        const INNER_COLOR = new gcodeViewer.Color("#ff0000");
-        const OUTER_COLOR = new gcodeViewer.Color("#00ff00");
-        const SKIRT_COLOR = new gcodeViewer.Color("#ffff00");
-        const FILL_COLOR = new gcodeViewer.Color("#ffff00");
-        const BOTTOM_FILL_COLOR = new gcodeViewer.Color("#ffff00");
-        const INTERNAL_FILL = new gcodeViewer.Color("#00ffff");
-        const TOP_FILL = new gcodeViewer.Color("#ff00ff");
-        const DEFAULT_COLOR = new gcodeViewer.Color("#0000ff");
-        let colorConfig = [];
+      const TRANSPARENT_COLOR = new gcodeViewer.Color();
 
-        gcode.split("\n").forEach(function (line, i) {
-          let color;
-          if (line.startsWith(";TYPE:WALL-INNER")) {
-            color = INNER_COLOR;
-          } else if (line.startsWith(";TYPE:WALL-OUTER")) {
-            color = OUTER_COLOR;
-          } else if (line.startsWith(";TYPE:SKIRT")) {
-            color = SKIRT_COLOR;
-          } else if (line.startsWith(";TYPE:FILL")) {
-            color = FILL_COLOR;
-          } else if (line.startsWith(";TYPE:BOTTOM-FILL")) {
-            color = BOTTOM_FILL_COLOR;
-          } else if (line.startsWith(";TYPE:INTERNAL-FILL")) {
-            color = INTERNAL_FILL;
-          } else if (line.startsWith(";TYPE:TOP-FILL")) {
-            color = TOP_FILL;
-          }
+      const INNER_COLOR = new gcodeViewer.Color("#ff0000");
+      const OUTER_COLOR = new gcodeViewer.Color("#00ff00");
+      const SKIRT_COLOR = new gcodeViewer.Color("#ffff00");
+      const FILL_COLOR = new gcodeViewer.Color("#ffff00");
+      const BOTTOM_FILL_COLOR = new gcodeViewer.Color("#ffff00");
+      const INTERNAL_FILL = new gcodeViewer.Color("#00ffff");
+      const TOP_FILL = new gcodeViewer.Color("#ff00ff");
+      const DEFAULT_COLOR = new gcodeViewer.Color("#0000ff");
+      let colorConfig = [];
 
-          if (
-            colorConfig.length === 0 ||
-            color && colorConfig[colorConfig.length - 1].color !== color
-          ) {
-            colorConfig.push({ toLine: i, color });
-          } else {
-            colorConfig[colorConfig.length - 1].toLine = i;
-          }
-        });
+      gcode.split("\n").forEach(function (line, i) {
+        let color;
+        if (line.startsWith(";TYPE:WALL-INNER")) {
+          color = INNER_COLOR;
+        } else if (line.startsWith(";TYPE:WALL-OUTER")) {
+          color = OUTER_COLOR;
+        } else if (line.startsWith(";TYPE:SKIRT")) {
+          color = SKIRT_COLOR;
+        } else if (line.startsWith(";TYPE:FILL")) {
+          color = FILL_COLOR;
+        } else if (line.startsWith(";TYPE:BOTTOM-FILL")) {
+          color = BOTTOM_FILL_COLOR;
+        } else if (line.startsWith(";TYPE:INTERNAL-FILL")) {
+          color = INTERNAL_FILL;
+        } else if (line.startsWith(";TYPE:TOP-FILL")) {
+          color = TOP_FILL;
+        }
 
-        const renderer = new gcodeViewer.GCodeRenderer(
-          gcode,
-          800,
-          600,
-          new gcodeViewer.Color(0x808080),
-        );
+        if (
+          colorConfig.length === 0 ||
+          color && colorConfig[colorConfig.length - 1].color !== color
+        ) {
+          colorConfig.push({ toLine: i, color });
+        } else {
+          colorConfig[colorConfig.length - 1].toLine = i;
+        }
+      });
 
-        // This is an example using the Speed colorizer.
-        // Other options are:
-        // * SimpleColorizer (default) - sets all lines to the same color
-        // * SpeedColorizer - colorizes based on the speed / feed rate
-        // * TempColorizer - colorizes based on the temperature
-        renderer.colorizer = new gcodeViewer.LineColorizer(colorConfig);
+      const renderer = new gcodeViewer.GCodeRenderer(
+        gcode,
+        800,
+        600,
+        new gcodeViewer.Color(0x808080),
+      );
 
-        //  renderer.type = "layer_comments"
+      // This is an example using the Speed colorizer.
+      // Other options are:
+      // * SimpleColorizer (default) - sets all lines to the same color
+      // * SpeedColorizer - colorizes based on the speed / feed rate
+      // * TempColorizer - colorizes based on the temperature
+      renderer.colorizer = new gcodeViewer.LineColorizer(colorConfig);
 
-        renderer.travelWidth = travelWidth;
+      //  renderer.type = "layer_comments"
 
-        const viewerRef = document.getElementById("gcode-viewer");
-        viewerRef.innerHTML = "";
-        viewerRef.append(renderer.element());
+      renderer.travelWidth = travelWidth;
 
-        await renderer.render();
+      const viewerRef = document.getElementById("gcode-viewer");
+      viewerRef.innerHTML = "";
+      viewerRef.append(renderer.element());
 
-        // set ui elements
-        const slider = document.getElementById("toolbar-slider");
-        slider.max = renderer.layerCount().toString();
-        slider.value = slider.max;
-        slider.oninput = (e) => {
-          if (!renderer) {
-            return;
-          }
+      await renderer.render();
 
-          renderer.sliceLayer(0, Number.parseInt(e.target.value));
-        };
+      // set ui elements
+      const slider = document.getElementById("toolbar-slider");
+      slider.max = renderer.layerCount().toString();
+      slider.value = slider.max;
+      slider.oninput = (e) => {
+        if (!renderer) {
+          return;
+        }
 
-        const travelWidthInput = document.getElementById(
-          "travel-width",
-        );
-        travelWidthInput.value = travelWidth;
-        travelWidthInput.oninput = (e) => {
-          if (!renderer) {
-            return;
-          }
+        renderer.sliceLayer(0, Number.parseInt(e.target.value));
+      };
 
-          travelWidth = e.target.value;
-        };
+      const travelWidthInput = document.getElementById(
+        "travel-width",
+      );
+      travelWidthInput.value = travelWidth;
+      travelWidthInput.oninput = (e) => {
+        if (!renderer) {
+          return;
+        }
 
-        document.getElementById("rerender").onclick = () => {
-          render();
-        };
+        travelWidth = e.target.value;
+      };
 
-        console.log("rendering finished");
-      }
-    </script>
+      document.getElementById("rerender").onclick = () => {
+        render();
+      };
 
-    <main>
-      <div class="content">
-        <div class="toolbar-top">
-          <div class="toolbar-entity">
-            Travel Width:
-            <input type="number" id="travel-width" />
-            <button type="button" id="rerender">Render</button>
-          </div>
-          <div class="toolbar-entity">
-            Layer:
-            <input
-              id="toolbar-slider"
-              class="slider"
-              type="range"
-              min="1"
-              max="1"
-              min="1"
-              value="1"
-            />
-          </div>
+      console.log("rendering finished");
+    }
+  </script>
+
+  <main>
+    <div class="content">
+      <div class="toolbar-top">
+        <div class="toolbar-entity">
+          Travel Width:
+          <input type="number" id="travel-width" />
+          <button type="button" id="rerender">Render</button>
         </div>
-        <div id="gcode-viewer"></div>
+        <div class="toolbar-entity">
+          Layer:
+          <input id="toolbar-slider" class="slider" type="range" min="1" max="1" min="1" value="1" />
+        </div>
       </div>
-    </main>
-    <script>
-      gcode = `;LAYER:0
+      <div id="gcode-viewer"></div>
+    </div>
+  </main>
+  <script>
+    gcode = `;LAYER:0
 ;Generated with GoSlice
 ;______________________
 M107 ; disable fan
@@ -118531,7 +118520,8 @@ M140 S0 ; Set bed to 0C (off)
 G28 X0  ; home X axis to get head out of the way
 M84 ;steppers off
 `;
-      render();
-    </script>
-  </body>
+    render();
+  </script>
+</body>
+
 </html>
